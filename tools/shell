@@ -1,0 +1,8 @@
+#!/bin/bash
+
+export TAG=${1:-latest}
+
+
+docker-compose run --rm \
+    game-local \
+    /bin/bash

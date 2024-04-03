@@ -1,0 +1,22 @@
+[package]
+name = "crabioware"
+version = "0.1.0"
+authors = [""]
+edition = "2021"
+
+[dependencies]
+agb = "^0.18.0"
+anymap = { version = "1.0.0-beta.2", default-features = false, features = ["hashbrown"] }
+hashbrown = "0.14.3"
+itertools = { version = "0.12.1", default-features = false }
+slotmap = { version = "1.0.7", default-features = false }
+
+[profile.dev]
+opt-level = 3
+debug = true
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+debug = true
+codegen-units = 1

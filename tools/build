@@ -1,0 +1,5 @@
+#!/bin/bash
+
+export TAG=${1:-latest}
+
+docker-compose build game

@@ -1,0 +1,10 @@
+services:
+
+  game: &game
+    image: "game:${TAG}"
+    build: .
+
+  game-local:
+    <<: *game
+    volumes:
+      - ./crabioware:/opt/crabioware
