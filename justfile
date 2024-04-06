@@ -53,6 +53,7 @@ _build-rom folder name:
     #!/usr/bin/env bash
     set -euxo pipefail
 
+    RELEASE_FOLDER="releases/"
     GAME_FOLDER="{{folder}}"
     INTERNAL_NAME="{{name}}"
 
@@ -73,7 +74,8 @@ _build-rom folder name:
         "$TARGET_FOLDER/thumbv4t-none-eabi/release/main" \
         -o "$GBA_FILE"
 
-    cp -v "$GBA_FILE" "${GAME_FOLDER}/${GAME_NAME}_$(date '+%Y%m%dT%H%M%S').gba"
+    mkdir -p $RELEASE_FOLDER
+    cp -v "$GBA_FILE" "${RELEASE_FOLDER}/${GAME_NAME}_$(date '+%Y%m%dT%H%M%S').gba"
 
 agb-gbafix *args:
     (agb-gbafix {{args}})
