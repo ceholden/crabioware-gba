@@ -35,6 +35,19 @@ impl LocationComponent {
 }
 impl Component for LocationComponent {}
 
+pub struct MaxSpeed {
+    pos: Number,
+    neg: Number,
+}
+impl Default for MaxSpeed {
+    fn default() -> Self {
+        Self {
+            pos: Number::new(2),
+            neg: Number::new(-2),
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct VelocityComponent {
     pub velocity: Vector2D<Number>,
@@ -44,6 +57,12 @@ pub struct VelocityComponent {
     pub rotation: Number,
 }
 impl Component for VelocityComponent {}
+impl VelocityComponent {
+    pub fn clamp_velocity(&mut self, max_speed: &MaxSpeed) {
+        self.velocity.x = self.velocity.x.clamp(max_speed.neg, max_speed.pos);
+        self.velocity.y = self.velocity.y.clamp(max_speed.neg, max_speed.pos);
+    }
+}
 
 #[derive(PartialEq, Eq)]
 pub struct CollisionComponent {

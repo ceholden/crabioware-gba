@@ -22,14 +22,24 @@ use crate::{
 };
 
 use super::components::{
-    CollisionComponent, LocationComponent, SpriteComponent, VelocityComponent,
+    CollisionComponent, LocationComponent, MaxSpeed, SpriteComponent, VelocityComponent,
 };
 use super::graphics::SpriteTag;
 
-#[derive(Default)]
 struct GameStateResource {
     score: u8,
     max_score: u8,
+    max_speed: MaxSpeed,
+}
+// FIXME: create for some GameDifficulty
+impl Default for GameStateResource {
+    fn default() -> Self {
+        Self {
+            score: 0,
+            max_score: 10,
+            max_speed: MaxSpeed::default(),
+        }
+    }
 }
 
 struct Ball {}
@@ -78,7 +88,7 @@ impl Ball {
                         y: num!(8.),
                     },
                 ),
-                bounce: num!(0.75),
+                bounce: num!(0.9),
                 inv_mass: num!(1.),
             }),
         )
@@ -151,8 +161,6 @@ impl Paddle {
 
 // TODO: add a "render cache" that helps us disconnect object setup and render
 //       e.g., so we can sort on z-axis or priority
-// TODO: SpriteComponent does NOT need the SpriteVram!
-//       The SpriteLoader takes care of
 // TODO: alias our own Vector2D so we can add impl like,
 //       * Mul for Rect
 //       * MulAssign for Rect
@@ -284,7 +292,6 @@ impl PongGame {
             (mut location_b, mut velocity_b, collision_b),
         ) in iter
         {
-            // FIXME: it'd be easier to use as a center x/y + half width/height
             let collision_box_a = collision_a.collision.translate(location_a.position);
             let collision_box_b = collision_b.collision.translate(location_b.position);
 
@@ -303,12 +310,14 @@ impl PongGame {
 
                 // Don't update if already moving away
                 if relative_velocity_norm > num!(0.) {
+                    // FIXME: missing representation of tangent impulse + friction info
                     let impulse = -(num!(1.) + elasticity) * relative_velocity_norm / inv_masses;
-                    // FIXME: clamp velocities for two reasons,
-                    //        1. GBA can only draw so fast
-                    //        2. Our collision can miss if velocity > width
+
                     velocity_a.velocity += collided.normal * impulse * collision_a.inv_mass;
                     velocity_b.velocity -= collided.normal * impulse * collision_b.inv_mass;
+
+                    velocity_a.clamp_velocity(&self.game_state.max_speed);
+                    velocity_b.clamp_velocity(&self.game_state.max_speed);
                 }
             }
         }
@@ -348,7 +357,7 @@ impl Game for PongGame {
         GameState::Running(Games::Pong)
     }
 
-    // TODO: split into 2 steps - create objects & then render
+    // TODO: split into 2 steps - create sprite objects & then render according to z-axis
     fn render(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
         for (location, sprite) in self
             .world

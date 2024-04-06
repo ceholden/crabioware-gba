@@ -41,6 +41,7 @@
     * [ ] Rays
     * [ ] Broad phase optimizations
 * [ ] Collision resolution
+* [ ] Games as crates in workspace, for fun
 
 ## Games
 
