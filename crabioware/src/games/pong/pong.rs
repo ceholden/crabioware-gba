@@ -14,14 +14,16 @@ use alloc::vec::Vec;
 
 use crate::games::Game;
 use crate::physics::intersect::Intersects;
+use crate::types::VecMath;
 use crate::types::{Number, Rect, RectMath};
 use crate::{
-    ecs::{EntityId, IsNotEntity, World},
+    ecs::{EntityId, World},
     games::{GameState, Games},
 };
-use crate::types::VecMath;
 
-use super::components::{CollisionComponent, LocationComponent, SpriteComponent, VelocityComponent};
+use super::components::{
+    CollisionComponent, LocationComponent, SpriteComponent, VelocityComponent,
+};
 use super::graphics::SpriteTag;
 
 #[derive(Default)]
@@ -49,7 +51,7 @@ impl Ball {
         let pos_y = (rng.gen() % GBA_HEIGHT).abs();
         let velocity = Vector2D {
             x: (num!(-1.) * (rng.gen().rem_euclid(10) + 1)).into(),
-            y: num!(0.), // y: (rng.gen().rem_euclid(10) + 1).into(),
+            y: (rng.gen().rem_euclid(10) + 1).into(),
         } / num!(2.0);
         (
             Some(sprite),
@@ -76,7 +78,7 @@ impl Ball {
                         y: num!(8.),
                     },
                 ),
-                bounce: num!(0.9),
+                bounce: num!(0.75),
                 inv_mass: num!(1.),
             }),
         )
@@ -159,6 +161,7 @@ pub struct PongGame {
     world: World,
     player: EntityId,
     opponent: EntityId,
+    balls: Vec<EntityId>,
     game_state: GameStateResource,
 }
 impl PongGame {
@@ -205,6 +208,7 @@ impl PongGame {
             world,
             player: entities[0],
             opponent: entities[1],
+            balls: entities[2..].into(),
             game_state: GameStateResource::default(),
         }
     }
@@ -238,11 +242,25 @@ impl PongGame {
         location.position.y += velocity.velocity.y * time;
     }
 
-    fn system_movement(&self, time: i32) {
-        let filter = IsNotEntity::new(self.player);
+    fn system_cpu_paddle(&self, entity: EntityId, time: i32) {
+        // FIXME: opponent logic ~ GameDifficulty
+        let (mut location, mut velocity) = *self
+            .world
+            .entry::<(&mut LocationComponent, &mut VelocityComponent)>(entity);
+        let balls = self
+            .world
+            .entries::<(&LocationComponent, &VelocityComponent)>(&self.balls);
+
+        // 1. Detect incoming ball(s) moving towards paddle
+        // 2. If incoming balls,
+        //  a. True => prioritize closest and move towards
+        //  b. False => reset towards center position
+    }
+
+    fn system_balls(&self, time: i32) {
         let iter = self
             .world
-            .query::<(&mut LocationComponent, &VelocityComponent), IsNotEntity>(&filter);
+            .entries::<(&mut LocationComponent, &VelocityComponent)>(&self.balls);
         for (mut location, velocity) in iter {
             location.position += velocity.velocity * time;
             location.angle += velocity.rotation * time;
@@ -271,13 +289,10 @@ impl PongGame {
             let collision_box_b = collision_b.collision.translate(location_b.position);
 
             if let Some(collided) = collision_box_a.separation(&collision_box_b) {
-                // FIXMEE -- this isn't quite right...
                 // Unstick
                 let inv_masses = collision_a.inv_mass + collision_b.inv_mass;
-                let delta_a =
-                    collided.normal * collided.distance / inv_masses * collision_a.inv_mass;
-                let delta_b =
-                    collided.normal * collided.distance / inv_masses * collision_b.inv_mass;
+                let delta_a = collided.separation * collision_a.inv_mass / inv_masses;
+                let delta_b = collided.separation * collision_b.inv_mass / inv_masses;
                 location_a.position -= delta_a;
                 location_b.position += delta_b;
 
@@ -286,10 +301,15 @@ impl PongGame {
                 let relative_velocity = velocity_a.velocity - velocity_b.velocity;
                 let relative_velocity_norm = relative_velocity.dot(collided.normal);
 
-                let impulse = -(num!(1.) + elasticity) * relative_velocity_norm / inv_masses;
-
-                velocity_a.velocity += collided.normal * impulse * collision_a.inv_mass;
-                velocity_b.velocity -= collided.normal * impulse * collision_b.inv_mass;
+                // Don't update if already moving away
+                if relative_velocity_norm > num!(0.) {
+                    let impulse = -(num!(1.) + elasticity) * relative_velocity_norm / inv_masses;
+                    // FIXME: clamp velocities for two reasons,
+                    //        1. GBA can only draw so fast
+                    //        2. Our collision can miss if velocity > width
+                    velocity_a.velocity += collided.normal * impulse * collision_a.inv_mass;
+                    velocity_b.velocity -= collided.normal * impulse * collision_b.inv_mass;
+                }
             }
         }
     }
@@ -321,7 +341,8 @@ impl PongGame {
 impl Game for PongGame {
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
         self.system_player(time, &buttons);
-        self.system_movement(time);
+        self.system_balls(time);
+        self.system_cpu_paddle(self.opponent, time);
         self.system_collision(time);
         self.system_bounds(time);
         GameState::Running(Games::Pong)
