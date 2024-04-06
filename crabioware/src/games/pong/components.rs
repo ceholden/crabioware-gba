@@ -23,6 +23,7 @@ pub struct LocationComponent {
     pub angle: Number,
 }
 impl LocationComponent {
+    #[allow(unused)]
     pub fn centered() -> LocationComponent {
         Self {
             position: Vector2D {

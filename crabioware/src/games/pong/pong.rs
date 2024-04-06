@@ -26,6 +26,8 @@ use super::components::{
 };
 use super::graphics::SpriteTag;
 
+// FIXME: keep score
+#[allow(unused)]
 struct GameStateResource {
     score: u8,
     max_score: u8,
@@ -250,6 +252,8 @@ impl PongGame {
         location.position.y += velocity.velocity.y * time;
     }
 
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     fn system_cpu_paddle(&self, entity: EntityId, time: i32) {
         // FIXME: opponent logic ~ GameDifficulty
         let (mut location, mut velocity) = *self

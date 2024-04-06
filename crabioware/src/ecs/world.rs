@@ -1,6 +1,5 @@
 use alloc::boxed::Box;
 
-use alloc::vec::Vec;
 use anymap::hashbrown::AnyMap;
 use itertools::Itertools;
 

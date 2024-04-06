@@ -29,7 +29,7 @@ impl PauseScreen {
     }
 }
 impl Game for PauseScreen {
-    fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
+    fn advance(&mut self, _: i32, buttons: &ButtonController) -> GameState {
         self.paused = match buttons.is_just_pressed(Button::START) {
             true => !self.paused,
             false => self.paused,

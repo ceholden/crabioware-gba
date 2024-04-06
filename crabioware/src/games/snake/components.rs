@@ -1,5 +1,5 @@
 use agb::{
-    display::{Priority, HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH},
+    display::{HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH},
     rng::RandomNumberGenerator,
 };
 
