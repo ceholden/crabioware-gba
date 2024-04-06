@@ -59,7 +59,7 @@ impl Ball {
             offset: Default::default(),
             frame: 0,
         };
-        let pos_x = (rng.gen() % GBA_WIDTH).abs();
+        let pos_x = (GBA_WIDTH / 2 + (rng.gen() % (GBA_WIDTH / 10))).abs();
         let pos_y = (rng.gen() % GBA_HEIGHT).abs();
         let velocity = Vector2D {
             x: (num!(-1.) * (rng.gen().rem_euclid(10) + 1)).into(),

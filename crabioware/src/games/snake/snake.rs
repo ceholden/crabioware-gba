@@ -105,7 +105,7 @@ impl SnakeGame {
         let max_score: u8 = match difficulty {
             GameDifficulty::EASY => 5,
             GameDifficulty::MEDIUM => 9,
-            GameDifficulty::HARD => (N_TILES_WIDE * N_TILES_TALL / 3) as u8,
+            GameDifficulty::HARD => (N_TILES_WIDE * N_TILES_TALL / 4) as u8,
         };
         let speed: u8 = match difficulty {
             GameDifficulty::EASY => 60,
