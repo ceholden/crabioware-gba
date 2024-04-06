@@ -15,7 +15,7 @@ pub type CombinationComponentView<'r, V> =
 
 pub struct World {
     entities: EntityMap,
-    pub components: AnyMap,
+    components: AnyMap,
 }
 impl Default for World {
     fn default() -> Self {
@@ -30,11 +30,6 @@ impl World {
             components: AnyMap::new(),
         }
     }
-
-    // TODOs:
-    // * do we need `is_alive`? (checks entity_id against current in entity array?)
-    // * how can we kill entity
-    //
 
     // TODO: move into ComponentRegistry() as part of ::new()
     //       this can help us with e.g. bitmask creation
@@ -52,6 +47,10 @@ impl World {
 
     pub fn destroy(&mut self, entity_id: EntityId) {
         self.entities.remove(entity_id);
+    }
+
+    pub fn is_alive(&self, entity_id: EntityId) -> bool {
+        self.entities.contains_key(entity_id)
     }
 
     pub fn entry<'r, V>(&self, entity_id: EntityId) -> EntityView<'_, V>

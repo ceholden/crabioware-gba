@@ -4,7 +4,6 @@ use core::cell::{Ref, RefMut};
 
 use super::core::{Component, ComponentMap, EntityId};
 
-// TODO: split up the "View" and the "Filter" so we can use it as part of the View
 pub trait View {
     type Result<'r>;
 

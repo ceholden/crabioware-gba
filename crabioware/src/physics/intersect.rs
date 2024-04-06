@@ -3,7 +3,7 @@ use agb::fixnum::num;
 use agb::fixnum::FixedNum;
 use agb::fixnum::Number as AGBNumber;
 use agb::fixnum::Vector2D;
-
+use agb::println;
 
 // FIXME: we want to support,
 //  1. Circle
@@ -46,26 +46,31 @@ impl<const N: usize> Intersects<FixedNum<N>> for Rect<FixedNum<N>> {
 
     fn separation(&self, other: &Self::Shape) -> Option<SeparationResult<FixedNum<N>>> {
         if let Some(mut intersection) = self.intersection(other) {
+            // Unless equal, only consider the largest axis of separation
+            // for AABBs (rectangles)
+            println!("Found intersection of size {}/{}", intersection.0.size.x, intersection.0.size.y);
             if intersection.0.size.x.abs() > intersection.0.size.y.abs() {
                 intersection.0.size.y = num!(0.)
             } else {
                 intersection.0.size.x = num!(0.)
             }
+
             let distance = intersection.0.size.magnitude();
-            let result = match distance == num!(0.) {
+            Some(match distance == num!(0.) {
+                // Assume separation in x axis if they're on top of one another
                 true => SeparationResult {
                     separation: intersection.0.size,
                     normal: Vector2D {
-                        x: num!(1.0),
+                        x: self.0.size.x,
                         y: num!(0.0),
                     },
                     distance: num!(1.0),
                 },
                 false => {
-                    if self.0.position.x - other.0.position.x > num!(0.) {
+                    if self.0.position.x > other.0.position.x {
                         intersection.0.size.x = -intersection.0.size.x;
                     }
-                    if self.0.position.y - other.0.position.y > num!(0.) {
+                    if self.0.position.y > other.0.position.y {
                         intersection.0.size.y = -intersection.0.size.y;
                     }
 
@@ -76,8 +81,7 @@ impl<const N: usize> Intersects<FixedNum<N>> for Rect<FixedNum<N>> {
                         distance,
                     }
                 }
-            };
-            Some(result)
+            })
         } else {
             None
         }

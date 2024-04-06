@@ -1,8 +1,5 @@
 use agb::{
-    display::{
-        object::{OamIterator, ObjectUnmanaged, SpriteLoader},
-        Priority,
-    },
+    display::object::{OamIterator, ObjectUnmanaged, SpriteLoader},
     input::{ButtonController, Tri},
     rng::{self, RandomNumberGenerator},
 };
@@ -63,10 +60,12 @@ impl Body {
 pub struct SnakeGame {
     world: World,
     rng: RandomNumberGenerator,
-    head: EntityId,
+    // Store head direction and commit upon movement
     head_direction: DirectionComponent,
+    // Store entities separately, sort of like a hacky archetype
     body: Vec<EntityId>,
     berries: Vec<EntityId>,
+    // Game state
     time: u32,
     speed: u8,
     score: u8,
@@ -102,7 +101,7 @@ impl SnakeGame {
         let berries = Vec::<EntityId>::new();
 
         // FIXME: implement difficulty selector
-        let difficulty = GameDifficulty::MEDIUM;
+        let difficulty = GameDifficulty::HARD;
         let max_score: u8 = match difficulty {
             GameDifficulty::EASY => 5,
             GameDifficulty::MEDIUM => 9,
@@ -117,7 +116,6 @@ impl SnakeGame {
         SnakeGame {
             world,
             rng: game_rng,
-            head,
             head_direction,
             body,
             berries,
@@ -129,7 +127,10 @@ impl SnakeGame {
     }
 
     fn system_controller(&mut self, buttons: &ButtonController) {
-        let direction = self.world.entry::<&DirectionComponent>(self.head).clone();
+        let direction = self
+            .world
+            .entry::<&DirectionComponent>(self.body[0])
+            .clone();
         match buttons.x_tri() {
             Tri::Positive => {
                 if direction != DirectionComponent::LEFT {
@@ -162,7 +163,7 @@ impl SnakeGame {
         // FIXME: snake sprite changes with direction
         let (mut direction, tile) = *self
             .world
-            .entry::<(&mut DirectionComponent, &TileComponent)>(self.head);
+            .entry::<(&mut DirectionComponent, &TileComponent)>(self.body[0]);
 
         let new_tile = TileComponent {
             x: tile.x.wrapping_add(self.head_direction.dx() * time as i16),
@@ -172,6 +173,7 @@ impl SnakeGame {
         new_tile
     }
 
+    // Check if head has eaten a berry, returning nutritional content of berry
     fn system_berry(&mut self, head_tile: &TileComponent) -> u8 {
         let mut eaten: u8 = 0;
         self.berries.retain(|&berry| {
@@ -186,7 +188,7 @@ impl SnakeGame {
         eaten
     }
 
-    fn system_body(&mut self, head: &TileComponent, berries_eaten: u8) {
+    fn system_body(&mut self, next_head: &TileComponent, berries_eaten: u8) {
         // Store original body length
         let body_length = self.body.len();
 
@@ -205,20 +207,17 @@ impl SnakeGame {
         // Move the snake body up 1 segment
         for (i, body_from_tail) in self.body.iter().enumerate().rev() {
             let mut tile_body_from_tail = self.world.entry::<&mut TileComponent>(*body_from_tail);
-            // Avoid move head on its own
             if i == 0 {
-                tile_body_from_tail.x = head.x;
-                tile_body_from_tail.y = head.y;
+                // Move head to next tile
+                tile_body_from_tail.x = next_head.x;
+                tile_body_from_tail.y = next_head.y;
             } else {
+                // Or move tail one segment closer to head
                 let tile_body_from_head = self.world.entry::<&TileComponent>(self.body[i - 1]);
                 tile_body_from_tail.x = tile_body_from_head.x;
                 tile_body_from_tail.y = tile_body_from_head.y;
             }
         }
-
-        let mut head_tile = *self.world.entry::<&mut TileComponent>(self.head);
-        head_tile.x = head.x;
-        head_tile.y = head.y;
     }
 
     fn system_collide(&mut self, head: &TileComponent) -> GameState {

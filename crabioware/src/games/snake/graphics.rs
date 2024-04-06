@@ -6,8 +6,9 @@ use agb::{
 
 // Graphics assets
 const SPRITES: &Graphics = include_aseprite!("assets/games/snake/sprites.aseprite");
-const SNAKE: &Tag = SPRITES.tags().get("Green");
-const BERRY: &Tag = SPRITES.tags().get("Red");
+const SNAKE: &Tag = SPRITES.tags().get("green");
+const BERRY: &Tag = SPRITES.tags().get("red");
+// FIXME: more nutritious purple berries
 const NUMBERS: &Tag = include_aseprite!("assets/games/numbers.aseprite")
     .tags()
     .get("white");
