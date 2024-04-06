@@ -1,10 +1,10 @@
 use agb::{
     display::{HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH},
-    fixnum::{num, Vector2D},
+    fixnum::num,
 };
 
 use crate::ecs::Component;
-use crate::types::{Number, Rect};
+use crate::types::{Number, Rect, Vector2D};
 
 use super::graphics::SpriteTag;
 

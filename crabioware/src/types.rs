@@ -1,7 +1,7 @@
 use agb::fixnum::FixedWidthUnsignedInteger;
 use agb::fixnum::Number as AGBNumber;
 pub use agb::fixnum::Rect;
-use agb::fixnum::Vector2D;
+pub use agb::fixnum::Vector2D;
 use agb::fixnum::{FixedNum, Num};
 use alloc::vec::Vec;
 

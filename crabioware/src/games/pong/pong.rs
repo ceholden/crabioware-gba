@@ -5,7 +5,7 @@ use agb::{
         AffineMatrixInstance, AffineMode, OamIterator, ObjectUnmanaged, SpriteLoader,
     },
     display::{HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH},
-    fixnum::{num, Vector2D},
+    fixnum::num,
     input::{ButtonController, Tri},
     rng::RandomNumberGenerator,
 };
@@ -15,7 +15,7 @@ use alloc::vec::Vec;
 use crate::games::Game;
 use crate::physics::intersect::Intersects;
 use crate::types::VecMath;
-use crate::types::{Number, Rect, RectMath};
+use crate::types::{Number, Rect, RectMath, Vector2D};
 use crate::{
     ecs::{EntityId, World},
     games::{GameState, Games},
@@ -332,13 +332,13 @@ impl PongGame {
 
         for (location, mut velocity, collision) in iter {
             if (location.position.y < num!(0.0) && velocity.velocity.y < num!(0.))
-                || (location.position.y + collision.collision.0.size.y > GBA_HEIGHT.into()
+                || (location.position.y + collision.collision.size.y > GBA_HEIGHT.into()
                     && velocity.velocity.y > num!(0.))
             {
                 velocity.velocity.y *= num!(-1.0)
             }
             if (location.position.x < num!(0.0) && velocity.velocity.x < num!(0.))
-                || (location.position.x + collision.collision.0.size.x > GBA_WIDTH.into()
+                || (location.position.x + collision.collision.size.x > GBA_WIDTH.into()
                     && velocity.velocity.x > num!(0.))
             {
                 velocity.velocity.x *= num!(-1.0)

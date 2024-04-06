@@ -1,9 +1,7 @@
-use crate::types::{Rect, RectMath};
+use crate::types::{Rect, RectMath, Vector2D};
 use agb::fixnum::num;
 use agb::fixnum::FixedNum;
 use agb::fixnum::Number as AGBNumber;
-use agb::fixnum::Vector2D;
-use agb::println;
 
 // FIXME: we want to support,
 //  1. Circle
@@ -37,8 +35,11 @@ impl<const N: usize> Intersects<FixedNum<N>> for Rect<FixedNum<N>> {
     type Shape = Rect<FixedNum<N>>;
 
     fn intersection(&self, other: &Self::Shape) -> Option<Self::Shape> {
-        if let Some(overlap) = self.0.overlapping_rect(other.0) {
-            Some(Self::Shape { 0: overlap })
+        if let Some(overlap) = self.overlapping_rect(*other) {
+            Some(Self::Shape {
+                position: overlap.position,
+                size: overlap.size,
+            })
         } else {
             None
         }
@@ -47,34 +48,34 @@ impl<const N: usize> Intersects<FixedNum<N>> for Rect<FixedNum<N>> {
     fn separation(&self, other: &Self::Shape) -> Option<SeparationResult<FixedNum<N>>> {
         if let Some(mut intersection) = self.intersection(other) {
             // Unless equal, only consider the minimum axis of separation for AABBs (rectangles)
-            if intersection.0.size.x.abs() < intersection.0.size.y.abs() {
-                intersection.0.size.y = num!(0.)
+            if intersection.size.x.abs() < intersection.size.y.abs() {
+                intersection.size.y = num!(0.)
             } else {
-                intersection.0.size.x = num!(0.)
+                intersection.size.x = num!(0.)
             }
 
-            let distance = intersection.0.size.magnitude();
+            let distance = intersection.size.magnitude();
             Some(match distance == num!(0.) {
                 // Assume separation in x axis if they're on top of one another
                 true => SeparationResult {
-                    separation: intersection.0.size,
+                    separation: intersection.size,
                     normal: Vector2D {
-                        x: self.0.size.x,
+                        x: self.size.x,
                         y: num!(0.0),
                     },
                     distance: num!(1.0),
                 },
                 false => {
-                    if self.0.position.x > other.0.position.x {
-                        intersection.0.size.x = -intersection.0.size.x;
+                    if self.position.x > other.position.x {
+                        intersection.size.x = -intersection.size.x;
                     }
-                    if self.0.position.y > other.0.position.y {
-                        intersection.0.size.y = -intersection.0.size.y;
+                    if self.position.y > other.position.y {
+                        intersection.size.y = -intersection.size.y;
                     }
 
-                    let normal = intersection.0.size / distance;
+                    let normal = intersection.size / distance;
                     SeparationResult {
-                        separation: intersection.0.size,
+                        separation: intersection.size,
                         normal,
                         distance,
                     }
