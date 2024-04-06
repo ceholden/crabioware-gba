@@ -1,6 +1,6 @@
 use agb::fixnum::FixedWidthUnsignedInteger;
 use agb::fixnum::Number as AGBNumber;
-use agb::fixnum::Rect as AGBRect;
+pub use agb::fixnum::Rect;
 use agb::fixnum::Vector2D;
 use agb::fixnum::{FixedNum, Num};
 use alloc::vec::Vec;
@@ -22,6 +22,8 @@ where
     }
 }
 
+// FIXME: move to AABB { center: ..., half_width: ...}
+
 // ========================================================================== //
 // Rect
 // ========================================================================== //
@@ -34,29 +36,18 @@ where
     fn dot(&self, other: Self) -> T;
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub struct Rect<T: AGBNumber>(pub AGBRect<T>);
-impl<T: AGBNumber> Rect<T> {
-    pub fn new(position: Vector2D<T>, size: Vector2D<T>) -> Self {
-        Self(AGBRect { position, size })
-    }
-
-    pub fn touches(&self, other: &Self) -> bool {
-        self.0.touches(other.0)
-    }
-}
 impl<const N: usize> RectMath<FixedNum<N>> for Rect<FixedNum<N>> {
     fn translate(&self, offset: Vector2D<FixedNum<N>>) -> Self {
-        Rect(AGBRect {
-            position: self.0.position + offset,
-            size: self.0.size,
-        })
+        Rect {
+            position: self.position + offset,
+            size: self.size,
+        }
     }
 
     fn centroid(&self) -> Vector2D<FixedNum<N>> {
         Vector2D {
-            x: self.0.position.x + self.0.size.x / 2,
-            y: self.0.position.y + self.0.size.y / 2,
+            x: self.position.x + self.size.x / 2,
+            y: self.position.y + self.size.y / 2,
         }
     }
 
