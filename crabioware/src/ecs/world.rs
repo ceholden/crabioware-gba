@@ -1,5 +1,6 @@
 use alloc::boxed::Box;
 
+use alloc::vec::Vec;
 use anymap::hashbrown::AnyMap;
 use itertools::Itertools;
 
@@ -53,11 +54,22 @@ impl World {
         self.entities.contains_key(entity_id)
     }
 
-    pub fn entry<'r, V>(&self, entity_id: EntityId) -> EntityView<'_, V>
+    pub fn entry<V>(&self, entity_id: EntityId) -> EntityView<'_, V>
     where
         V: View,
     {
         Box::new(V::borrow(entity_id, &self.components))
+    }
+
+    pub fn entries<'e, V>(&'e self, entity_ids: &'e [EntityId]) -> ComponentView<'e, V>
+    where
+        V: View,
+    {
+        Box::new(
+            entity_ids
+                .into_iter()
+                .map(|id| V::borrow(*id, &self.components)),
+        )
     }
 
     fn filter<'f, V, F>(&'f self, entity_filter: &'f F) -> Box<dyn Iterator<Item = EntityId> + '_>
