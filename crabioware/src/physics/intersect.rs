@@ -46,10 +46,8 @@ impl<const N: usize> Intersects<FixedNum<N>> for Rect<FixedNum<N>> {
 
     fn separation(&self, other: &Self::Shape) -> Option<SeparationResult<FixedNum<N>>> {
         if let Some(mut intersection) = self.intersection(other) {
-            // Unless equal, only consider the largest axis of separation
-            // for AABBs (rectangles)
-            println!("Found intersection of size {}/{}", intersection.0.size.x, intersection.0.size.y);
-            if intersection.0.size.x.abs() > intersection.0.size.y.abs() {
+            // Unless equal, only consider the minimum axis of separation for AABBs (rectangles)
+            if intersection.0.size.x.abs() < intersection.0.size.y.abs() {
                 intersection.0.size.y = num!(0.)
             } else {
                 intersection.0.size.x = num!(0.)
