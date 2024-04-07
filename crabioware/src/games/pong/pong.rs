@@ -44,16 +44,16 @@ impl Default for GameStateResource {
     }
 }
 
-struct Ball {}
+struct Ball {
+    sprite: SpriteComponent,
+    location: LocationComponent,
+    velocity: VelocityComponent,
+    collision: CollisionComponent,
+}
 impl Ball {
     fn new(
         rng: &mut RandomNumberGenerator,
-    ) -> (
-        Option<SpriteComponent>,
-        Option<LocationComponent>,
-        Option<VelocityComponent>,
-        Option<CollisionComponent>,
-    ) {
+    ) -> Self {
         let sprite = SpriteComponent {
             tag: SpriteTag::Ball,
             offset: Default::default(),
@@ -65,21 +65,21 @@ impl Ball {
             x: (num!(-1.) * (rng.gen().rem_euclid(10) + 1)).into(),
             y: (rng.gen().rem_euclid(10) + 1).into(),
         } / num!(2.0);
-        (
-            Some(sprite),
-            Some(LocationComponent {
+        Self {
+            sprite,
+            location: LocationComponent {
                 position: Vector2D {
                     x: pos_x.into(),
                     y: pos_y.into(),
                 },
                 angle: num!(0.),
-            }),
-            Some(VelocityComponent {
+            },
+            velocity: VelocityComponent {
                 velocity,
                 acceleration: Vector2D::default(),
                 rotation: num!(0.01),
-            }),
-            Some(CollisionComponent {
+            },
+            collision: CollisionComponent {
                 collision: Rect::new(
                     Vector2D {
                         x: num!(4.0),
@@ -92,8 +92,18 @@ impl Ball {
                 ),
                 bounce: num!(0.9),
                 inv_mass: num!(1.),
-            }),
-        )
+            }
+        }
+    }
+
+    pub fn create(self, world: &mut World) -> EntityId {
+        world
+            .create()
+            .with(self.sprite)
+            .with(self.location)
+            .with(self.velocity)
+            .with(self.collision)
+            .build()
     }
 }
 
@@ -102,37 +112,34 @@ enum Side {
     RIGHT,
 }
 
-struct Paddle {}
+struct Paddle {
+    sprite: SpriteComponent,
+    location: LocationComponent,
+    velocity: VelocityComponent,
+    collision: CollisionComponent,
+}
 impl Paddle {
-    fn new(
-        side: Side,
-        y_velocity: Number,
-    ) -> (
-        Option<SpriteComponent>,
-        Option<LocationComponent>,
-        Option<VelocityComponent>,
-        Option<CollisionComponent>,
-    ) {
+    fn new(side: Side, y_velocity: Number) -> Self {
         let x_start: Number = match side {
             Side::LEFT => num!(0.1) * GBA_WIDTH,
             Side::RIGHT => num!(0.8) * GBA_WIDTH,
         };
         let y_start: Number = num!(0.25) * GBA_HEIGHT;
-        (
+        Self {
             // paddle mid
-            Some(SpriteComponent {
+            sprite: SpriteComponent {
                 tag: SpriteTag::Paddle,
                 offset: Vector2D::default(),
                 frame: 0,
-            }),
-            Some(LocationComponent {
+            },
+            location: LocationComponent {
                 position: Vector2D {
                     x: x_start,
                     y: y_start,
                 },
                 angle: num!(0.),
-            }),
-            Some(VelocityComponent {
+            },
+            velocity: VelocityComponent {
                 velocity: Vector2D {
                     x: num!(0.),
                     y: y_velocity,
@@ -142,8 +149,8 @@ impl Paddle {
                     y: num!(0.1),
                 },
                 rotation: num!(0.0),
-            }),
-            Some(CollisionComponent {
+            },
+            collision: CollisionComponent {
                 collision: Rect::new(
                     Vector2D {
                         x: num!(3.),
@@ -156,8 +163,18 @@ impl Paddle {
                 ),
                 bounce: num!(1.0),
                 inv_mass: num!(1e-3),
-            }),
-        )
+            },
+        }
+    }
+
+    pub fn create(self, world: &mut World) -> EntityId {
+        world
+            .create()
+            .with(self.sprite)
+            .with(self.location)
+            .with(self.velocity)
+            .with(self.collision)
+            .build()
     }
 }
 
@@ -183,42 +200,18 @@ impl PongGame {
         world.register_component::<CollisionComponent>();
 
         let mut rng = RandomNumberGenerator::new();
-        let mut entities = vec![
-            // player
-            Paddle::new(Side::LEFT, num!(0.)),
-            // opponent
-            Paddle::new(Side::RIGHT, num!(1.)),
-            // balls
-            Ball::new(&mut rng),
-            Ball::new(&mut rng),
+        let player = Paddle::new(Side::LEFT, num!(0.)).create(&mut world);
+        let opponent = Paddle::new(Side::RIGHT, num!(1.)).create(&mut world);
+        let balls = vec![
+            Ball::new(&mut rng).create(&mut world),
+            Ball::new(&mut rng).create(&mut world),
         ];
-
-        let entities: Vec<EntityId> = entities
-            .drain(..)
-            .map(|(spr, loc, vel, col)| {
-                // Preload sprite
-                match spr {
-                    Some(ref spr_) => {
-                        loader.get_vram_sprite(spr_.tag.tag().sprite(spr_.frame.into()));
-                    }
-                    None => {}
-                }
-                // Create entity
-                world
-                    .create()
-                    .maybe_with(spr)
-                    .maybe_with(loc)
-                    .maybe_with(vel)
-                    .maybe_with(col)
-                    .build()
-            })
-            .collect();
 
         Self {
             world,
-            player: entities[0],
-            opponent: entities[1],
-            balls: entities[2..].into(),
+            player,
+            opponent,
+            balls,
             game_state: GameStateResource::default(),
         }
     }

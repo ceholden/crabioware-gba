@@ -8,6 +8,7 @@ use crate::types::{Number, Rect, Vector2D};
 
 use super::graphics::SpriteTag;
 
+#[derive(Debug)]
 pub struct SpriteComponent {
     pub tag: SpriteTag,
     pub offset: Vector2D<Number>,
@@ -17,7 +18,7 @@ pub struct SpriteComponent {
 impl Component for SpriteComponent {}
 
 // For now, location is relative to the GBA screen (!!)
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct LocationComponent {
     pub position: Vector2D<Number>,
     pub angle: Number,
@@ -49,7 +50,7 @@ impl Default for MaxSpeed {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct VelocityComponent {
     pub velocity: Vector2D<Number>,
     // TODO: add acceleration and some notion of possible jerk
@@ -65,7 +66,7 @@ impl VelocityComponent {
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct CollisionComponent {
     pub collision: Rect<Number>,
     pub bounce: Number,
@@ -73,7 +74,7 @@ pub struct CollisionComponent {
 }
 impl Component for CollisionComponent {}
 
-#[derive(Default)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PhysicsComponent {
     pub position: Vector2D<Number>,
     pub angle: Number,

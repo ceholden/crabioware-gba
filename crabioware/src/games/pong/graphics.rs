@@ -9,6 +9,7 @@ const SPRITES: &Graphics = include_aseprite!("assets/games/pong/sprites.aseprite
 const PADDLE: &Tag = SPRITES.tags().get("paddle");
 const BALL: &Tag = SPRITES.tags().get("crab");
 
+#[derive(Clone, Copy, Debug)]
 pub enum SpriteTag {
     Paddle,
     Ball,

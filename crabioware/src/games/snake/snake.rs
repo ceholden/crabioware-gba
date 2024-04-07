@@ -32,7 +32,7 @@ impl Berry {
         }
     }
 
-    pub fn create(&self, world: &mut World) -> EntityId {
+    pub fn create(self, world: &mut World) -> EntityId {
         world.create().with(self.tile).with(self.sprite).build()
     }
 }
@@ -52,7 +52,7 @@ impl Body {
         }
     }
 
-    pub fn create(&self, world: &mut World) -> EntityId {
+    pub fn create(self, world: &mut World) -> EntityId {
         world.create().with(self.tile).with(self.sprite).build()
     }
 }
