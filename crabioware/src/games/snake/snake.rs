@@ -78,15 +78,15 @@ impl SnakeGame {
         world.register_component::<TileComponent>();
         world.register_component::<SpriteComponent>();
 
-        let game_rng = RandomNumberGenerator::new_with_seed([
-            rng::gen() as u32,
-            rng::gen() as u32,
-            rng::gen() as u32,
-            rng::gen() as u32,
+        let mut game_rng = RandomNumberGenerator::new_with_seed([
+            rng.gen().abs() as u32,
+            rng.gen().abs() as u32,
+            rng.gen().abs() as u32,
+            rng.gen().abs() as u32,
         ]);
 
-        let head_tile_component = TileComponent::random(rng);
-        let head_direction = DirectionComponent::random(rng);
+        let head_tile_component = TileComponent::random(&mut game_rng);
+        let head_direction = DirectionComponent::random(&mut game_rng);
         let head = world
             .create()
             .with(head_tile_component)
@@ -101,16 +101,16 @@ impl SnakeGame {
         let berries = Vec::<EntityId>::new();
 
         // FIXME: implement difficulty selector
-        let difficulty = GameDifficulty::HARD;
+        let difficulty = GameDifficulty::EASY;
         let max_score: u8 = match difficulty {
             GameDifficulty::EASY => 5,
             GameDifficulty::MEDIUM => 9,
             GameDifficulty::HARD => (N_TILES_WIDE * N_TILES_TALL / 4) as u8,
         };
         let speed: u8 = match difficulty {
-            GameDifficulty::EASY => 60,
+            GameDifficulty::EASY => 45,
             GameDifficulty::MEDIUM => 30,
-            GameDifficulty::HARD => 10,
+            GameDifficulty::HARD => 15,
         };
 
         SnakeGame {

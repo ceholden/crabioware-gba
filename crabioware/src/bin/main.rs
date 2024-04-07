@@ -28,6 +28,8 @@ fn main(mut gba: agb::Gba) -> ! {
 
     let mut game_state = GameState::Start(Games::Start);
     loop {
+        rng.gen(); // helps feel more random by introducing time
+
         buttons.update();
 
         match game_state {
