@@ -55,7 +55,7 @@ fn main(mut gba: agb::Gba) -> ! {
             }
             GameState::Win(_) => {
                 // If we win, go back to start for now
-                selected_game = Games::Start.new(&mut sprite_loader, &mut rng);
+                selected_game = Games::Victory.new(&mut sprite_loader, &mut rng);
                 game_state = selected_game.advance(1i32, &buttons);
             }
         }
