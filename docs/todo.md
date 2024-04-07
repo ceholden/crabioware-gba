@@ -7,6 +7,7 @@
     * [Pong](#pong)
     * [Snake](#snake)
     * [Flappy Bird](#flappy-bird)
+    * [Asteroids](#asteroids)
     * [Platformer](#platformer)
     * [Space Invaders](#space-invaders)
     * [Brawler](#brawler)
@@ -56,6 +57,10 @@ Snake.. eats crabs?
 ### Flappy Bird
 
 Crab flies trying to avoid cat paw swipes
+
+### Asteroids
+
+Crab ship destroys meteors that split into smaller meteors.
 
 ### Platformer
 
