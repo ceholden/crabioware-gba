@@ -18,21 +18,24 @@
 
 * [ ] Start screen
 * [x] Game select
-    * MVP game selector
+    * [x] MVP game selector
+    * [ ] Game selector keeps the game you selected
 * [ ] Micro-game sequencer
 * [ ] Difficulty selection
 * [ ] Saves
+    * [ ] High score counter
+    * [ ] Remembers preferences
 * [x] Game over screen
     * MVP game over screen
+* [ ] Background layer for UI elements (score/health/etc)
 * [x] Sprites
     * Snake
 * [x] Affine sprites
     * Pong
-* [x] Aseprite -> game art pipeline
-    * Built into `agbrs/agb`
 * [ ] Tilemap editor -> game art pipeline
-* [ ] Explore "random image to pixel art" art pipeline
-    * See <https://github.com/sedthh/pyxelate>
+    * [Tiled](https://www.mapeditor.org/) (?)
+    * [Sprite Fusion](https://www.spritefusion.com/) (?)
+    * [LDTK](https://ldtk.io/) (?)
 * [ ] Background scrolling tilemap
 * [ ] Collision with tilemap
 * [ ] Collision detection
@@ -40,9 +43,11 @@
     * [ ] Circles
     * [ ] SAT
     * [ ] Rays
+    * [ ] Continuous collision detection
     * [ ] Broad phase optimizations
 * [ ] Collision resolution
 * [ ] Games as crates in workspace, for fun
+* [ ] Timed mode (instead of after win/loss)
 
 ## Games
 
