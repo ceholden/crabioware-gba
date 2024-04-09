@@ -8,11 +8,14 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use agb::println;
-use crabioware::games::{Game, GameState, Games, PauseScreen};
+use crabioware::games::{Game, GameState, Games, PauseScreen, GameDifficulty};
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
     extern crate alloc;
+
+    // FIXME: implement difficulty selector
+    let difficulty = GameDifficulty::HARD;
 
     // FIXME: background! and which type?
     let (_background, _) = gba.display.video.tiled0();
@@ -23,8 +26,10 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut buttons = agb::input::ButtonController::new();
     let mut rng = agb::rng::RandomNumberGenerator::new();
 
-    let mut selected_game: Box<dyn Game> = Games::Start.new(&mut sprite_loader, &mut rng);
+    let mut selected_game: Box<dyn Game> = Games::Start.new(&difficulty, &mut sprite_loader, &mut rng);
     let mut pause = PauseScreen::unpaused(Games::Start);
+
+
 
     let mut game_state = GameState::Start(Games::Start);
     loop {
@@ -35,12 +40,12 @@ fn main(mut gba: agb::Gba) -> ! {
         match game_state {
             GameState::Start(game) => {
                 println!("Starting game = {:?}", game);
-                selected_game = game.new(&mut sprite_loader, &mut rng);
+                selected_game = game.new(&difficulty, &mut sprite_loader, &mut rng);
                 game_state = selected_game.advance(1i32, &buttons);
             }
             GameState::GameOver => {
                 println!("GAME OVER");
-                selected_game = Games::GameOver.new(&mut sprite_loader, &mut rng);
+                selected_game = Games::GameOver.new(&difficulty, &mut sprite_loader, &mut rng);
                 game_state = selected_game.advance(1i32, &buttons);
             }
             GameState::Running(_) => {
@@ -57,7 +62,7 @@ fn main(mut gba: agb::Gba) -> ! {
             }
             GameState::Win(_) => {
                 // If we win, go back to start for now
-                selected_game = Games::Victory.new(&mut sprite_loader, &mut rng);
+                selected_game = Games::Victory.new(&difficulty, &mut sprite_loader, &mut rng);
                 game_state = selected_game.advance(1i32, &buttons);
             }
         }

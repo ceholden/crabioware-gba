@@ -6,7 +6,7 @@ use agb::{
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::games::{Game, GameDifficulty};
+use crate::games::{Game, GameDifficulty, difficulty};
 use crate::{
     ecs::{EntityId, World},
     games::{GameState, Games},
@@ -57,6 +57,34 @@ impl Body {
     }
 }
 
+struct GameStateResource {
+    time: u32,
+    speed: u8,
+    score: u8,
+    max_score: u8,
+}
+impl GameStateResource {
+    fn new(difficulty: &GameDifficulty) -> GameStateResource {
+        let max_score: u8 = match difficulty {
+            GameDifficulty::EASY => 5,
+            GameDifficulty::MEDIUM => 9,
+            GameDifficulty::HARD => (N_TILES_WIDE * N_TILES_TALL / 4) as u8,
+        };
+        let speed: u8 = match difficulty {
+            GameDifficulty::EASY => 45,
+            GameDifficulty::MEDIUM => 30,
+            GameDifficulty::HARD => 15,
+        };
+        GameStateResource {
+            time: 0,
+            speed,
+            score: 0,
+            max_score,
+        }
+    }
+}
+
+
 pub struct SnakeGame {
     world: World,
     rng: RandomNumberGenerator,
@@ -65,14 +93,14 @@ pub struct SnakeGame {
     // Store entities separately, sort of like a hacky archetype
     body: Vec<EntityId>,
     berries: Vec<EntityId>,
-    // Game state
-    time: u32,
-    speed: u8,
-    score: u8,
-    max_score: u8,
+    game_state: GameStateResource,
 }
 impl SnakeGame {
-    pub fn new(_: &mut SpriteLoader, rng: &mut RandomNumberGenerator) -> Self {
+    pub fn new(
+        difficulty: &GameDifficulty,
+        loader: &mut SpriteLoader,
+        rng: &mut RandomNumberGenerator,
+    ) -> Self {
         let mut world = World::new();
         world.register_component::<DirectionComponent>();
         world.register_component::<TileComponent>();
@@ -100,29 +128,13 @@ impl SnakeGame {
         let body = vec![head];
         let berries = Vec::<EntityId>::new();
 
-        // FIXME: implement difficulty selector
-        let difficulty = GameDifficulty::EASY;
-        let max_score: u8 = match difficulty {
-            GameDifficulty::EASY => 5,
-            GameDifficulty::MEDIUM => 9,
-            GameDifficulty::HARD => (N_TILES_WIDE * N_TILES_TALL / 4) as u8,
-        };
-        let speed: u8 = match difficulty {
-            GameDifficulty::EASY => 45,
-            GameDifficulty::MEDIUM => 30,
-            GameDifficulty::HARD => 15,
-        };
-
         SnakeGame {
             world,
             rng: game_rng,
             head_direction,
             body,
             berries,
-            time: 0u32,
-            speed,
-            score: 0u8,
-            max_score,
+            game_state: GameStateResource::new(difficulty)
         }
     }
 
@@ -238,11 +250,11 @@ impl SnakeGame {
     fn renderer_digits(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) {
         // FIXME: refactor into some commonly useful score screen
         // FIXMEx2: isn't there a background layer for stuff like this?
-        let digits: Vec<u8> = match self.score {
+        let digits: Vec<u8> = match self.game_state.score {
             0 => vec![0u8],
             _ => {
                 let mut digits: Vec<u8> = Vec::new();
-                let mut score_ = self.score.clone();
+                let mut score_ = self.game_state.score.clone();
                 while score_ != 0 {
                     digits.push(score_ % 10);
                     score_ /= 10;
@@ -262,7 +274,7 @@ impl SnakeGame {
 }
 impl Game for SnakeGame {
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
-        self.time = self.time.wrapping_add_signed(time);
+        self.game_state.time = self.game_state.time.wrapping_add_signed(time);
 
         // Spawn berries?
         if self.berries.len() == 0 {
@@ -274,7 +286,7 @@ impl Game for SnakeGame {
         self.system_controller(buttons);
 
         // Only advance every FPS / speed ~+ 1/sec on easy
-        if self.time % self.speed as u32 != 0 {
+        if self.game_state.time % self.game_state.speed as u32 != 0 {
             return GameState::Running(Games::Snake);
         }
 
@@ -285,8 +297,8 @@ impl Game for SnakeGame {
         let state = self.system_collide(&head_tile);
         match state {
             GameState::Running(game) => {
-                self.score += eaten as u8;
-                if self.score > self.max_score {
+                self.game_state.score += eaten as u8;
+                if self.game_state.score > self.game_state.max_score {
                     GameState::Win(game)
                 } else {
                     state

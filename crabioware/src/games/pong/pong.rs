@@ -12,7 +12,7 @@ use agb::{
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::games::Game;
+use crate::games::{Game, GameDifficulty};
 use crate::physics::intersect::Intersects;
 use crate::types::VecMath;
 use crate::types::{Number, Rect, RectMath, Vector2D};
@@ -51,9 +51,7 @@ struct Ball {
     collision: CollisionComponent,
 }
 impl Ball {
-    fn new(
-        rng: &mut RandomNumberGenerator,
-    ) -> Self {
+    fn new(rng: &mut RandomNumberGenerator) -> Self {
         let sprite = SpriteComponent {
             tag: SpriteTag::Ball,
             offset: Default::default(),
@@ -92,7 +90,7 @@ impl Ball {
                 ),
                 bounce: num!(0.9),
                 inv_mass: num!(1.),
-            }
+            },
         }
     }
 
@@ -192,19 +190,18 @@ pub struct PongGame {
     game_state: GameStateResource,
 }
 impl PongGame {
-    pub fn new(loader: &mut SpriteLoader, _: &mut RandomNumberGenerator) -> Self {
+    pub fn new(_: &GameDifficulty, _: &mut SpriteLoader, rng: &mut RandomNumberGenerator) -> Self {
         let mut world = World::new();
         world.register_component::<SpriteComponent>();
         world.register_component::<LocationComponent>();
         world.register_component::<VelocityComponent>();
         world.register_component::<CollisionComponent>();
 
-        let mut rng = RandomNumberGenerator::new();
         let player = Paddle::new(Side::LEFT, num!(0.)).create(&mut world);
         let opponent = Paddle::new(Side::RIGHT, num!(1.)).create(&mut world);
         let balls = vec![
-            Ball::new(&mut rng).create(&mut world),
-            Ball::new(&mut rng).create(&mut world),
+            Ball::new(rng).create(&mut world),
+            Ball::new(rng).create(&mut world),
         ];
 
         Self {
