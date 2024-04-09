@@ -6,7 +6,7 @@ use agb::{
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::games::{Game, GameDifficulty, difficulty};
+use crate::games::{Game, GameDifficulty};
 use crate::{
     ecs::{EntityId, World},
     games::{GameState, Games},
@@ -84,7 +84,6 @@ impl GameStateResource {
     }
 }
 
-
 pub struct SnakeGame {
     world: World,
     rng: RandomNumberGenerator,
@@ -124,9 +123,10 @@ impl SnakeGame {
                 frame: 0,
             })
             .build();
-
         let body = vec![head];
-        let berries = Vec::<EntityId>::new();
+
+        let berry = Berry::random(&mut game_rng).create(&mut world);
+        let berries = vec![berry];
 
         SnakeGame {
             world,
@@ -134,7 +134,7 @@ impl SnakeGame {
             head_direction,
             body,
             berries,
-            game_state: GameStateResource::new(difficulty)
+            game_state: GameStateResource::new(difficulty),
         }
     }
 
@@ -185,8 +185,17 @@ impl SnakeGame {
         new_tile
     }
 
+    fn system_spawn_berry(&mut self) {
+        // Spawn berries?
+        if self.berries.len() == 0 {
+            // FIXME: berries spawn randomly where snake isn't
+            let berry = Berry::random(&mut self.rng).create(&mut self.world);
+            self.berries.push(berry);
+        }
+    }
+
     // Check if head has eaten a berry, returning nutritional content of berry
-    fn system_berry(&mut self, head_tile: &TileComponent) -> u8 {
+    fn system_eat_berry(&mut self, head_tile: &TileComponent) -> u8 {
         let mut eaten: u8 = 0;
         self.berries.retain(|&berry| {
             let berry_tile = self.world.entry::<&TileComponent>(berry).clone();
@@ -276,13 +285,6 @@ impl Game for SnakeGame {
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
         self.game_state.time = self.game_state.time.wrapping_add_signed(time);
 
-        // Spawn berries?
-        if self.berries.len() == 0 {
-            // FIXME: berries spawn randomly where snake isn't
-            let berry = Berry::random(&mut self.rng).create(&mut self.world);
-            self.berries.push(berry);
-        }
-
         self.system_controller(buttons);
 
         // Only advance every FPS / speed ~+ 1/sec on easy
@@ -290,10 +292,14 @@ impl Game for SnakeGame {
             return GameState::Running(Games::Snake);
         }
 
+        // Move head tile in direction
         let head_tile = self.system_head(time);
 
-        let eaten = self.system_berry(&head_tile);
+        let eaten = self.system_eat_berry(&head_tile);
+        self.system_spawn_berry();
+
         self.system_body(&head_tile, eaten);
+
         let state = self.system_collide(&head_tile);
         match state {
             GameState::Running(game) => {
