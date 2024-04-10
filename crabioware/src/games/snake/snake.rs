@@ -1,7 +1,7 @@
 use agb::{
     display::object::{OamIterator, ObjectUnmanaged, SpriteLoader},
     input::{ButtonController, Tri},
-    rng::{self, RandomNumberGenerator},
+    rng::RandomNumberGenerator,
 };
 use alloc::vec;
 use alloc::vec::Vec;

@@ -34,12 +34,23 @@ impl LocationComponent {
             angle: num!(0.),
         }
     }
+
+    pub fn clamp_world(&mut self) {
+        self.position.x = self.position.x.clamp(num!(0.), GBA_WIDTH.into());
+        self.position.y = self.position.y.clamp(num!(0.), GBA_HEIGHT.into());
+    }
 }
 impl Component for LocationComponent {}
 
+#[derive(Debug)]
 pub struct MaxSpeed {
     pos: Number,
     neg: Number,
+}
+impl MaxSpeed {
+    pub fn symmetric(pos: Number) -> Self {
+        Self { pos, neg: -pos }
+    }
 }
 impl Default for MaxSpeed {
     fn default() -> Self {

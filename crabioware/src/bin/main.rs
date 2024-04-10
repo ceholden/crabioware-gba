@@ -8,7 +8,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use agb::println;
-use crabioware::games::{Game, GameState, Games, PauseScreen, GameDifficulty};
+use crabioware::games::{Game, GameDifficulty, GameState, Games, PauseScreen};
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
@@ -26,10 +26,9 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut buttons = agb::input::ButtonController::new();
     let mut rng = agb::rng::RandomNumberGenerator::new();
 
-    let mut selected_game: Box<dyn Game> = Games::Start.new(&difficulty, &mut sprite_loader, &mut rng);
+    let mut selected_game: Box<dyn Game> =
+        Games::Start.new(&difficulty, &mut sprite_loader, &mut rng);
     let mut pause = PauseScreen::unpaused(Games::Start);
-
-
 
     let mut game_state = GameState::Start(Games::Start);
     loop {
