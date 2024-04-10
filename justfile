@@ -29,10 +29,8 @@ clean:
 
 fmt:
     just _all-crates _fmt
-    just _fmt tools
 fmt-check:
     just _all-crates _fmt-check
-    just _fmt-check tools
 
 run-example example:
     just _build-example "{{example}}"
