@@ -262,9 +262,11 @@ impl PongGame {
     }
 
     fn system_player(&self, time: i32, buttons: &ButtonController) {
-        let (mut location, mut velocity) = *self
-            .world
-            .entry::<(&mut LocationComponent, &mut VelocityComponent)>(&self.player);
+        let (mut location, mut velocity, collision) = *self.world.entry::<(
+            &mut LocationComponent,
+            &mut VelocityComponent,
+            &CollisionComponent,
+        )>(&self.player);
 
         match buttons.y_tri() {
             Tri::Positive => {
@@ -287,11 +289,9 @@ impl PongGame {
             }
         };
         location.position.y += velocity.velocity.y * time;
-        location.clamp_world();
+        self.clamp_paddle(&mut location, &mut velocity, &collision);
     }
 
-    #[allow(unused_variables)]
-    #[allow(unused_mut)]
     fn system_cpu_paddle(&self, entity: EntityId, time: i32) {
         // FIXME: opponent logic ~ GameDifficulty
         let (mut paddle_location, mut paddle_velocity, paddle_collision) =
@@ -344,8 +344,27 @@ impl PongGame {
 
         paddle_velocity.clamp_velocity(&self.game_state.max_speed);
         paddle_location.position.y += paddle_velocity.velocity.y * time;
+        self.clamp_paddle(
+            &mut paddle_location,
+            &mut paddle_velocity,
+            &paddle_collision,
+        );
+    }
 
-        paddle_location.clamp_world();
+    fn clamp_paddle(
+        &self,
+        location: &mut LocationComponent,
+        velocity: &mut VelocityComponent,
+        collision: &CollisionComponent,
+    ) {
+        let zero = num!(0.);
+        if location.position.y < zero {
+            location.position.y = zero;
+            velocity.velocity.y = zero;
+        } else if location.position.y + collision.collision.size.y > GBA_HEIGHT.into() {
+            location.position.y = Number::new(GBA_HEIGHT) - collision.collision.size.y;
+            velocity.velocity.y = zero;
+        }
     }
 
     fn system_balls(&self, time: i32) {
