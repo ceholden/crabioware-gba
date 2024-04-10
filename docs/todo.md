@@ -6,6 +6,7 @@
 * [Games](#games)
     * [Pong](#pong)
     * [Snake](#snake)
+    * [Artillery](#artillery)
     * [Flappy Bird](#flappy-bird)
     * [Asteroids](#asteroids)
     * [Platformer](#platformer)
@@ -48,6 +49,9 @@
 * [ ] Collision resolution
 * [ ] Games as crates in workspace, for fun
 * [ ] Timed mode (instead of after win/loss)
+* [ ] Rogueification
+    * (?) could powerups transfer across mini-games?
+        * e.g., speed -> faster paddle, snake brakes, higher turn rate, etc
 
 ## Games
 
@@ -55,9 +59,31 @@
 
 Crabs ping ponging back and forth
 
+TODO:
+
+* [ ] Involve A/B buttons somehow
+* [ ] L/R change impact angle?
+    * Blocked by not having oriented bounding box (OBB) collision
+
 ### Snake
 
 Snake.. eats crabs?
+
+TODO:
+
+* [ ] More difficulty ~ mechanics
+    * [ ] Spawn berries with different nutrition content (purple=2)
+* [ ] Spawn berries not touching snake
+
+### Artillery
+
+Crab is Napoleon?
+
+Increments capabilities related to,
+
+* Translation of "position" information from world to screen coordinates
+* Auto/rng generated tile backgrounds
+* Tile background collision
 
 ### Flappy Bird
 
