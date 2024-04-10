@@ -139,10 +139,7 @@ impl SnakeGame {
     }
 
     fn system_controller(&mut self, buttons: &ButtonController) {
-        let direction = self
-            .world
-            .entry::<&DirectionComponent>(self.body[0])
-            .clone();
+        let direction = **self.world.entry::<&DirectionComponent>(&self.body[0]);
         match buttons.x_tri() {
             Tri::Positive => {
                 if direction != DirectionComponent::LEFT {
@@ -175,7 +172,7 @@ impl SnakeGame {
         // FIXME: snake sprite changes with direction
         let (mut direction, tile) = *self
             .world
-            .entry::<(&mut DirectionComponent, &TileComponent)>(self.body[0]);
+            .entry::<(&mut DirectionComponent, &TileComponent)>(&self.body[0]);
 
         let new_tile = TileComponent {
             x: tile.x.wrapping_add(self.head_direction.dx() * time as i16),
@@ -198,10 +195,10 @@ impl SnakeGame {
     fn system_eat_berry(&mut self, head_tile: &TileComponent) -> u8 {
         let mut eaten: u8 = 0;
         self.berries.retain(|&berry| {
-            let berry_tile = self.world.entry::<&TileComponent>(berry).clone();
+            let berry_tile = self.world.entry::<&TileComponent>(&berry).clone();
             if berry_tile.equals(&head_tile) {
                 eaten += 1;
-                self.world.destroy(berry);
+                self.world.destroy(&berry);
                 return false;
             }
             return true;
@@ -217,8 +214,7 @@ impl SnakeGame {
         if berries_eaten > 0 {
             let tail = self
                 .world
-                .entry::<&TileComponent>(self.body[body_length - 1])
-                .clone();
+                .entry::<&TileComponent>(&self.body[body_length - 1]).clone();
             for _ in 0..berries_eaten {
                 let new_tail = Body::new(tail.clone()).create(&mut self.world);
                 self.body.push(new_tail);
@@ -227,14 +223,14 @@ impl SnakeGame {
 
         // Move the snake body up 1 segment
         for (i, body_from_tail) in self.body.iter().enumerate().rev() {
-            let mut tile_body_from_tail = self.world.entry::<&mut TileComponent>(*body_from_tail);
+            let mut tile_body_from_tail = self.world.entry::<&mut TileComponent>(body_from_tail);
             if i == 0 {
                 // Move head to next tile
                 tile_body_from_tail.x = next_head.x;
                 tile_body_from_tail.y = next_head.y;
             } else {
                 // Or move tail one segment closer to head
-                let tile_body_from_head = self.world.entry::<&TileComponent>(self.body[i - 1]);
+                let tile_body_from_head = self.world.entry::<&TileComponent>(&self.body[i - 1]);
                 tile_body_from_tail.x = tile_body_from_head.x;
                 tile_body_from_tail.y = tile_body_from_head.y;
             }
@@ -248,7 +244,7 @@ impl SnakeGame {
         }
         // Snake bit itself
         for body in self.body[1..].iter() {
-            let body_tile = self.world.entry::<&TileComponent>(*body);
+            let body_tile = self.world.entry::<&TileComponent>(body);
             if head.equals(&body_tile) {
                 return GameState::GameOver;
             }

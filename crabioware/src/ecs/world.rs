@@ -45,19 +45,19 @@ impl World {
         builder
     }
 
-    pub fn destroy(&mut self, entity_id: EntityId) {
-        self.entities.remove(entity_id);
+    pub fn destroy(&mut self, entity_id: &EntityId) {
+        self.entities.remove(*entity_id);
     }
 
-    pub fn is_alive(&self, entity_id: EntityId) -> bool {
-        self.entities.contains_key(entity_id)
+    pub fn is_alive(&self, entity_id: &EntityId) -> bool {
+        self.entities.contains_key(*entity_id)
     }
 
-    pub fn entry<V>(&self, entity_id: EntityId) -> EntityView<'_, V>
+    pub fn entry<V>(&self, entity_id: &EntityId) -> EntityView<'_, V>
     where
         V: View,
     {
-        Box::new(V::borrow(entity_id, &self.components))
+        Box::new(V::borrow(*entity_id, &self.components))
     }
 
     pub fn entries<'e, V>(&'e self, entity_ids: &'e [EntityId]) -> ComponentView<'e, V>

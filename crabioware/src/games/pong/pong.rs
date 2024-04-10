@@ -264,7 +264,7 @@ impl PongGame {
     fn system_player(&self, time: i32, buttons: &ButtonController) {
         let (mut location, mut velocity) = *self
             .world
-            .entry::<(&mut LocationComponent, &mut VelocityComponent)>(self.player);
+            .entry::<(&mut LocationComponent, &mut VelocityComponent)>(&self.player);
 
         match buttons.y_tri() {
             Tri::Positive => {
@@ -299,7 +299,7 @@ impl PongGame {
                 &mut LocationComponent,
                 &mut VelocityComponent,
                 &CollisionComponent,
-            )>(entity);
+            )>(&entity);
 
         let balls = self
             .world
@@ -443,7 +443,7 @@ impl PongGame {
     fn system_ball_scored(&mut self, balls: Vec<EntityId>) {
         self.balls.retain(|b| !balls.contains(b));
         for ball in balls {
-            self.world.destroy(ball);
+            self.world.destroy(&ball);
             let new_ball = Ball::new(&mut self.game_rng).create(&mut self.world);
             self.balls.push(new_ball);
         }
