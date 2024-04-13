@@ -9,7 +9,9 @@
     * [Artillery](#artillery)
     * [Flappy Bird](#flappy-bird)
     * [Asteroids](#asteroids)
+    * [Schmup](#schmup)
     * [Platformer](#platformer)
+    * [PacCrab](#paccrab)
     * [Space Invaders](#space-invaders)
     * [Brawler](#brawler)
 
@@ -89,13 +91,44 @@ Increments capabilities related to,
 
 Crab flies trying to avoid cat paw swipes
 
+* Gravity physics
+* Scrolling / moving tile map
+* RNG level generation
+
 ### Asteroids
 
 Crab ship destroys meteors that split into smaller meteors.
 
+* Rocks breaking apart -> split entity
+* Propulsion physics
+* Control ideas...
+    * Up - forward
+    * L/R - change rotation
+    * Down - N/A
+    * R/L can strafe?
+    * A - laser?
+    * B - bomb?
+
+
+### Schmup
+
+Crab in water attacked by birds, fish, etc with lasers/etc
+
+* Probably need broad phase collision optimizations since
+  projectile count will be large
+* Cohorts of enemies spawn with path patterns to follow
+
 ### Platformer
 
 Crabio rescues other crab that ventured into a trap.
+
+### PacCrab
+
+Crab eats berries, fish chase.
+
+* Path finding
+* Tile collision
+* RNG level generation (?)
 
 ### Space Invaders
 
