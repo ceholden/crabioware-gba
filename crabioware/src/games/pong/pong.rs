@@ -226,10 +226,6 @@ impl Paddle {
 
 // TODO: add a "render cache" that helps us disconnect object setup and render
 //       e.g., so we can sort on z-axis or priority
-// TODO: alias our own Vector2D so we can add impl like,
-//       * Mul for Rect
-//       * MulAssign for Rect
-//       * Display for all
 pub struct PongGame {
     world: World,
     game_rng: RandomNumberGenerator,

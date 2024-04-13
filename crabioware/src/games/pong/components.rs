@@ -24,7 +24,6 @@ pub struct LocationComponent {
     pub angle: Number,
 }
 impl LocationComponent {
-    #[allow(unused)]
     pub fn centered() -> LocationComponent {
         Self {
             position: Vector2D {
@@ -35,10 +34,6 @@ impl LocationComponent {
         }
     }
 
-    pub fn clamp_world(&mut self) {
-        self.position.x = self.position.x.clamp(num!(0.), GBA_WIDTH.into());
-        self.position.y = self.position.y.clamp(num!(0.), GBA_HEIGHT.into());
-    }
 }
 impl Component for LocationComponent {}
 

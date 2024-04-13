@@ -5,7 +5,8 @@ pub use agb::fixnum::Vector2D;
 use agb::fixnum::{FixedNum, Num};
 use alloc::vec::Vec;
 
-pub type Number = agb::fixnum::FixedNum<8>;
+pub type Number = agb::fixnum::FixedNum<10>;
+
 
 // ========================================================================== //
 // Vector2D
@@ -22,8 +23,7 @@ where
     }
 }
 
-// FIXME: move to AABB { center: ..., half_width: ...}
-
+// FIXME: add AABB { center: ..., half_width: ...}
 // ========================================================================== //
 // Rect
 // ========================================================================== //
