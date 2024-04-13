@@ -7,7 +7,6 @@ use agb::{
     display::{HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH},
     fixnum::num,
     input::{ButtonController, Tri},
-    println,
     rng::RandomNumberGenerator,
 };
 use alloc::vec;
@@ -264,11 +263,13 @@ impl PongGame {
 
         let mut game_state = GameStateResource::new(difficulty);
 
-        let balls: Vec<EntityId> = (0..2).map(|_| {
-            let ball = Ball::new(&game_state.spawn, &mut game_rng).create(&mut world);
-            game_state.spawn = game_state.spawn.next();
-            ball
-        }).collect();
+        let balls: Vec<EntityId> = (0..2)
+            .map(|_| {
+                let ball = Ball::new(&game_state.spawn, &mut game_rng).create(&mut world);
+                game_state.spawn = game_state.spawn.next();
+                ball
+            })
+            .collect();
 
         Self {
             world,
@@ -315,7 +316,6 @@ impl PongGame {
     fn system_cpu_acquire_target(
         &self,
         paddle_location: &LocationComponent,
-        paddle_collision: &CollisionComponent,
         time: i32,
     ) -> (Option<EntityId>, Number) {
         let balls = self.world.entries::<(
@@ -326,8 +326,6 @@ impl PongGame {
         )>(&self.balls);
 
         // 1. Detect incoming ball(s) moving towards paddle
-        // FIXME: track a "target" and only reset if scored or rebounded
-        //        to avoid changing target and reduce compute
         let mut incoming = Vec::<(Number, EntityId, Vector2D<Number>, Vector2D<Number>)>::new();
         for (entity, location, velocity, collision) in balls {
             let delta = paddle_location.position.x - location.position.x;
@@ -348,9 +346,8 @@ impl PongGame {
 
         // Check if incoming balls are suitable targets
         if incoming.len() > 0 {
-            // Prioritize closest and move towards
-
             // FIXME: closest.. that we can reach
+            // Prioritize lowest ETA (mix of fastest, closest)
             incoming.sort_by(|(a, ..), (b, ..)| a.cmp(b));
             let (eta, entity, position, velocity) = incoming[0];
 
@@ -361,7 +358,7 @@ impl PongGame {
         }
 
         // Default case -- move towards middle point
-        let target_y = Number::new(GBA_HEIGHT / 2) - paddle_collision.collision.size.y / num!(2.);
+        let target_y = Number::new(GBA_HEIGHT / 2);
         (None, target_y)
     }
 
@@ -369,15 +366,16 @@ impl PongGame {
         &self,
         target: EntityId,
         paddle_location: &LocationComponent,
-        paddle_collision: &CollisionComponent,
         time: i32,
     ) -> (Option<EntityId>, bool, Number) {
         // Make sure ball is alive
         if self.world.is_alive(&target) {
             // FIXME: find current y position
-            let (ball_location, ball_velocity) = *self
-                .world
-                .entry::<(&mut LocationComponent, &mut VelocityComponent)>(&target);
+            let (ball_location, ball_velocity, ball_collision) = *self.world.entry::<(
+                &mut LocationComponent,
+                &mut VelocityComponent,
+                &CollisionComponent,
+            )>(&target);
 
             // FIXME: check frames to impact against delta_y distance.. we might not make it!
 
@@ -386,14 +384,16 @@ impl PongGame {
                 // Confirm it's still moving towards us...
                 let delta = paddle_location.position.x - ball_location.position.x;
                 if delta * ball_velocity.velocity.x > num!(0.) {
-                    let target_y = ball_location.position.y + ball_velocity.velocity.y * time;
+                    let target_y = ball_location.position.y
+                        + ball_collision.collision.size.y
+                        + ball_velocity.velocity.y * time;
                     return (Some(target), true, target_y);
                 }
             }
         }
 
         // If we're here our target is invalid, and we must search again
-        let (target, y_target) = self.system_cpu_acquire_target(paddle_location, paddle_collision, time);
+        let (target, y_target) = self.system_cpu_acquire_target(paddle_location, time);
         (target, false, y_target)
     }
 
@@ -410,7 +410,7 @@ impl PongGame {
             Some(target) => {
                 // Track existing target / reacquire
                 let (target, tracked, target_y) =
-                    self.system_cpu_track_target(target, &paddle_location, &paddle_collision, time);
+                    self.system_cpu_track_target(target, &paddle_location, time);
 
                 // Update tracking state
                 if tracked {
@@ -422,23 +422,32 @@ impl PongGame {
             }
             None => {
                 // Find new target
-                self.system_cpu_acquire_target(&paddle_location, &paddle_collision, time)
+                self.system_cpu_acquire_target(&paddle_location, time)
             }
         };
         self.opponent_state.target = target;
 
-        let projected_y = paddle_location.position.y + paddle_velocity.velocity.y * time;
-        let new_velocity_y = if projected_y > target_y {
+        let delta_y = target_y - paddle_location.position.y - paddle_collision.collision.size.y / num!(2.);
+
+        let zero = num!(0.);
+        let new_velocity_y = if delta_y < zero {
             paddle_velocity.velocity.y - paddle_velocity.acceleration.y * time
-        } else if projected_y < target_y {
+        } else if delta_y > zero {
             paddle_velocity.velocity.y + paddle_velocity.acceleration.y * time
         } else {
-            paddle_velocity.velocity.y
+            0.into()
         };
         paddle_velocity.velocity.y = new_velocity_y;
-
         paddle_velocity.clamp_velocity(&self.game_state.max_speed);
-        paddle_location.position.y += paddle_velocity.velocity.y * time;
+
+        // Move min(distance to target, velocity * time)
+        let move_range_y = paddle_velocity.velocity.y * time;
+        let move_y = match delta_y.abs() < move_range_y.abs() {
+            true => delta_y,
+            false => move_range_y,
+        };
+
+        paddle_location.position.y += move_y;
         self.clamp_paddle(
             &mut paddle_location,
             &mut paddle_velocity,
@@ -558,7 +567,8 @@ impl PongGame {
         self.balls.retain(|b| !balls.contains(b));
         for ball in balls {
             self.world.destroy(&ball);
-            let new_ball = Ball::new(&self.game_state.spawn, &mut self.game_rng).create(&mut self.world);
+            let new_ball =
+                Ball::new(&self.game_state.spawn, &mut self.game_rng).create(&mut self.world);
             self.game_state.spawn = self.game_state.spawn.next();
             self.balls.push(new_ball);
         }
