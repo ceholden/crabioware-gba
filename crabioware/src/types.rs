@@ -8,7 +8,7 @@ use alloc::vec::Vec;
 pub type Number = agb::fixnum::FixedNum<8>;
 
 // ========================================================================== //
-// TODO: need our own Vector2D...?
+// Vector2D
 // ========================================================================== //
 pub trait VecMath<N> {
     fn dot(&self, other: Self) -> N;

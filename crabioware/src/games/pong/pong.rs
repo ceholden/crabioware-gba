@@ -34,6 +34,7 @@ struct GameStateResource {
     opponent_score: u8,
     max_score: u8,
     max_speed: MaxSpeed,
+    spawn: Side,
 }
 impl GameStateResource {
     fn new(difficulty: &GameDifficulty) -> Self {
@@ -42,12 +43,12 @@ impl GameStateResource {
             GameDifficulty::MEDIUM => MaxSpeed::symmetric(num!(1.5)),
             GameDifficulty::HARD => MaxSpeed::symmetric(num!(2.)),
         };
-        println!("MAX SPEED: {:?}", max_speed);
         GameStateResource {
             player_score: 0,
             opponent_score: 0,
             max_score: 10,
             max_speed,
+            spawn: Side::LEFT,
         }
     }
 
@@ -68,6 +69,7 @@ impl Default for GameStateResource {
             opponent_score: 0,
             max_score: 10,
             max_speed: MaxSpeed::default(),
+            spawn: Side::LEFT,
         }
     }
 }
@@ -84,27 +86,24 @@ struct Ball {
     collision: CollisionComponent,
 }
 impl Ball {
-    fn new(rng: &mut RandomNumberGenerator) -> Self {
+    fn new(side: &Side, rng: &mut RandomNumberGenerator) -> Self {
         let sprite = SpriteComponent {
             tag: SpriteTag::Ball,
             offset: Default::default(),
             frame: 0,
         };
-        let pos_x = (GBA_WIDTH / 2 + (rng.gen() % (GBA_WIDTH / 10))).abs();
-        let pos_y = (rng.gen() % GBA_HEIGHT).abs();
+        let x_sign: i32 = match side {
+            Side::LEFT => -1,
+            Side::RIGHT => 1,
+        };
         let velocity = Vector2D::<Number>::new(
-            (-(rng.gen().rem_euclid(10) + 5)).into(),
-            (rng.gen().rem_euclid(10) + 5).into(),
+            (x_sign * rng.gen().rem_euclid(5) + x_sign * 5).into(),
+            (x_sign * rng.gen().rem_euclid(5) + x_sign * 5).into(),
         ) / num!(10.);
+
         Self {
             sprite,
-            location: LocationComponent {
-                position: Vector2D {
-                    x: pos_x.into(),
-                    y: pos_y.into(),
-                },
-                angle: num!(0.),
-            },
+            location: LocationComponent::centered(),
             velocity: VelocityComponent {
                 velocity,
                 acceleration: Vector2D::default(),
@@ -141,6 +140,14 @@ impl Ball {
 enum Side {
     LEFT,
     RIGHT,
+}
+impl Side {
+    fn next(&self) -> Self {
+        match self {
+            Side::LEFT => Side::RIGHT,
+            Side::RIGHT => Side::LEFT,
+        }
+    }
 }
 
 struct Paddle {
@@ -245,10 +252,14 @@ impl PongGame {
 
         let player = Paddle::new(Side::LEFT, num!(0.)).create(&mut world);
         let opponent = Paddle::new(Side::RIGHT, num!(1.)).create(&mut world);
-        let balls = vec![
-            Ball::new(&mut game_rng).create(&mut world),
-            Ball::new(&mut game_rng).create(&mut world),
-        ];
+
+        let mut game_state = GameStateResource::new(difficulty);
+
+        let balls: Vec<EntityId> = (0..2).map(|_| {
+            let ball = Ball::new(&game_state.spawn, &mut game_rng).create(&mut world);
+            game_state.spawn = game_state.spawn.next();
+            ball
+        }).collect();
 
         Self {
             world,
@@ -257,7 +268,7 @@ impl PongGame {
             opponent,
             balls,
             opponent_state: OpponentResource::default(),
-            game_state: GameStateResource::new(difficulty),
+            game_state,
         }
     }
 
@@ -463,7 +474,8 @@ impl PongGame {
         self.balls.retain(|b| !balls.contains(b));
         for ball in balls {
             self.world.destroy(&ball);
-            let new_ball = Ball::new(&mut self.game_rng).create(&mut self.world);
+            let new_ball = Ball::new(&self.game_state.spawn, &mut self.game_rng).create(&mut self.world);
+            self.game_state.spawn = self.game_state.spawn.next();
             self.balls.push(new_ball);
         }
     }
