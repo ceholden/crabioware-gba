@@ -77,6 +77,15 @@ impl Default for GameStateResource {
 #[derive(Default)]
 struct OpponentResource {
     target: Option<EntityId>,
+    tracked_duration: u32,
+}
+impl OpponentResource {
+    fn reset(target: Option<EntityId>) -> Self {
+        Self {
+            target,
+            tracked_duration: 0,
+        }
+    }
 }
 
 struct Ball {
@@ -303,8 +312,93 @@ impl PongGame {
         self.clamp_paddle(&mut location, &mut velocity, &collision);
     }
 
-    fn system_cpu_paddle(&self, entity: EntityId, time: i32) {
-        // FIXME: opponent logic ~ GameDifficulty
+    fn system_cpu_acquire_target(
+        &self,
+        paddle_location: &LocationComponent,
+        paddle_collision: &CollisionComponent,
+        time: i32,
+    ) -> (Option<EntityId>, Number) {
+        let balls = self.world.entries::<(
+            EntityId,
+            &LocationComponent,
+            &VelocityComponent,
+            &CollisionComponent,
+        )>(&self.balls);
+
+        // 1. Detect incoming ball(s) moving towards paddle
+        // FIXME: track a "target" and only reset if scored or rebounded
+        //        to avoid changing target and reduce compute
+        let mut incoming = Vec::<(Number, EntityId, Vector2D<Number>, Vector2D<Number>)>::new();
+        for (entity, location, velocity, collision) in balls {
+            let delta = paddle_location.position.x - location.position.x;
+            let eta = if velocity.velocity.x != num!(0.) {
+                delta / velocity.velocity.x
+            } else {
+                num!(9999.)
+            };
+            if eta > num!(0.) {
+                incoming.push((
+                    eta,
+                    entity,
+                    location.position + collision.collision.size / num!(2.),
+                    velocity.velocity,
+                ))
+            }
+        }
+
+        // Check if incoming balls are suitable targets
+        if incoming.len() > 0 {
+            // Prioritize closest and move towards
+
+            // FIXME: closest.. that we can reach
+            incoming.sort_by(|(a, ..), (b, ..)| a.cmp(b));
+            let (eta, entity, position, velocity) = incoming[0];
+
+            // Ensure ETA is close enough
+            if eta < num!(180.) {
+                return (Some(entity), position.y + velocity.y * time);
+            }
+        }
+
+        // Default case -- move towards middle point
+        let target_y = Number::new(GBA_HEIGHT / 2) - paddle_collision.collision.size.y / num!(2.);
+        (None, target_y)
+    }
+
+    fn system_cpu_track_target(
+        &self,
+        target: EntityId,
+        paddle_location: &LocationComponent,
+        paddle_collision: &CollisionComponent,
+        time: i32,
+    ) -> (Option<EntityId>, bool, Number) {
+        // Make sure ball is alive
+        if self.world.is_alive(&target) {
+            // FIXME: find current y position
+            let (ball_location, ball_velocity) = *self
+                .world
+                .entry::<(&mut LocationComponent, &mut VelocityComponent)>(&target);
+
+            // FIXME: check frames to impact against delta_y distance.. we might not make it!
+
+            // Don't get hyper fixated no a target without rescanning
+            if self.opponent_state.tracked_duration < 60 {
+                // Confirm it's still moving towards us...
+                let delta = paddle_location.position.x - ball_location.position.x;
+                if delta * ball_velocity.velocity.x > num!(0.) {
+                    let target_y = ball_location.position.y + ball_velocity.velocity.y * time;
+                    return (Some(target), true, target_y);
+                }
+            }
+        }
+
+        // If we're here our target is invalid, and we must search again
+        let (target, y_target) = self.system_cpu_acquire_target(paddle_location, paddle_collision, time);
+        (target, false, y_target)
+    }
+
+    fn system_cpu_paddle(&mut self, entity: EntityId, time: i32) {
+        // FIXME: increment opponent logic ~ GameDifficulty
         let (mut paddle_location, mut paddle_velocity, paddle_collision) =
             *self.world.entry::<(
                 &mut LocationComponent,
@@ -312,36 +406,26 @@ impl PongGame {
                 &CollisionComponent,
             )>(&entity);
 
-        let balls = self
-            .world
-            .entries::<(&LocationComponent, &VelocityComponent, &CollisionComponent)>(&self.balls);
+        let (target, target_y) = match self.opponent_state.target {
+            Some(target) => {
+                // Track existing target / reacquire
+                let (target, tracked, target_y) =
+                    self.system_cpu_track_target(target, &paddle_location, &paddle_collision, time);
 
-        // 1. Detect incoming ball(s) moving towards paddle
-        // FIXME: track a "target" and only reset if scored or rebounded
-        //        to avoid changing target and reduce compute
-        let mut incoming = Vec::<(Number, Vector2D<Number>, Vector2D<Number>)>::new();
-        for (location, velocity, collision) in balls {
-            let delta = paddle_location.position.x - location.position.x;
-            if delta * velocity.velocity.x > num!(0.) {
-                incoming.push((
-                    delta,
-                    location.position + collision.collision.size / num!(2.),
-                    velocity.velocity,
-                ))
+                // Update tracking state
+                if tracked {
+                    self.opponent_state.tracked_duration += 1;
+                } else {
+                    self.opponent_state = OpponentResource::reset(target);
+                }
+                (target, target_y)
             }
-        }
-
-        // Define target Y position -- we either want to reset to middle or towards ball
-        // 2. If incoming balls,
-        let target_y = if incoming.len() > 0 {
-            //  a. True => prioritize closest and move towards
-            incoming.sort_by(|(a, _, _), (b, _, _)| a.cmp(b));
-            let (_, position, _) = incoming[0];
-            position.y
-        } else {
-            // b. False => move towards middle point
-            Number::new(GBA_HEIGHT / 2) - paddle_collision.collision.size.y / num!(2.)
+            None => {
+                // Find new target
+                self.system_cpu_acquire_target(&paddle_location, &paddle_collision, time)
+            }
         };
+        self.opponent_state.target = target;
 
         let projected_y = paddle_location.position.y + paddle_velocity.velocity.y * time;
         let new_velocity_y = if projected_y > target_y {
