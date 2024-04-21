@@ -1,0 +1,215 @@
+{
+    "columns": 42,
+    "image": "tiles.png",
+    "imageheight": 8,
+    "imagewidth": 336,
+    "margin": 0,
+    "name": "pac-crab",
+    "spacing": 0,
+    "tilecount": 43,
+    "tiledversion": "1.10.2",
+    "tileheight": 8,
+    "tiles": [
+        {
+            "id": 2,
+            "type": "Wall"
+        },
+        {
+            "id": 5,
+            "type": "Wall"
+        },
+        {
+            "id": 1,
+            "type": "Wall"
+        },
+        {
+            "id": 4,
+            "type": "Wall"
+        },
+        {
+            "id": 0,
+            "type": "Wall"
+        },
+        {
+            "id": 15,
+            "type": "Wall"
+        },
+        {
+            "id": 3,
+            "type": "Wall"
+        },
+        {
+            "id": 6,
+            "type": "Wall"
+        },
+        {
+            "id": 8,
+            "type": "Wall"
+        },
+        {
+            "id": 11,
+            "type": "Wall"
+        },
+        {
+            "id": 9,
+            "type": "Wall"
+        },
+        {
+            "id": 10,
+            "type": "Wall"
+        },
+        {
+            "id": 12,
+            "type": "Wall"
+        },
+        {
+            "id": 13,
+            "type": "Wall"
+        },
+        {
+            "id": 14,
+            "type": "Wall"
+        },
+        {
+            "id": 17,
+            "type": "Wall"
+        },
+        {
+            "id": 16,
+            "type": "Wall"
+        },
+        {
+            "id": 18,
+            "type": "Wall"
+        },
+        {
+            "id": 19,
+            "type": "Wall"
+        },
+        {
+            "id": 20,
+            "type": "Wall"
+        },
+        {
+            "id": 21,
+            "type": "Wall"
+        },
+        {
+            "id": 22,
+            "type": "Wall"
+        },
+        {
+            "id": 23,
+            "type": "Wall"
+        },
+        {
+            "id": 24,
+            "type": "Door"
+        },
+        {
+            "id": 25,
+            "type": "Wall"
+        },
+        {
+            "id": 26,
+            "type": "Wall"
+        },
+        {
+            "id": 27,
+            "type": "Wall"
+        },
+        {
+            "id": 28,
+            "type": "Wall"
+        },
+        {
+            "id": 29,
+            "type": "Wall"
+        },
+        {
+            "id": 30,
+            "type": "Wall"
+        },
+        {
+            "id": 31,
+            "type": "Wall"
+        },
+        {
+            "id": 32,
+            "type": "Wall"
+        },
+        {
+            "id": 33,
+            "type": "Wall"
+        },
+        {
+            "id": 34,
+            "type": "Wall"
+        },
+        {
+            "id": 35,
+            "type": "Wall"
+        },
+        {
+            "id": 36,
+            "type": "Wall"
+        },
+        {
+            "id": 7,
+            "properties": [
+                {
+                    "name": "Name",
+                    "type": "string",
+                    "value": "Blue"
+                }
+            ],
+            "type": "Enemy"
+        },
+        {
+            "id": 37,
+            "properties": [
+                {
+                    "name": "Name",
+                    "type": "string",
+                    "value": "Pink"
+                }
+            ],
+            "type": "Enemy"
+        },
+        {
+            "id": 38,
+            "properties": [
+                {
+                    "name": "Name",
+                    "type": "string",
+                    "value": "Yellow"
+                }
+            ],
+            "type": "Enemy"
+        },
+        {
+            "id": 39,
+            "type": "Berry"
+        },
+        {
+            "id": 40,
+            "type": "WarpA"
+        },
+        {
+            "id": 41,
+            "type": "Path"
+        },
+        {
+            "id": 42
+        }
+    ],
+    "tilewidth": 8,
+    "transformations": {
+        "hflip": false,
+        "preferuntransformed": true,
+        "rotate": false,
+        "vflip": false
+    },
+    "type": "tileset",
+    "version": "1.10"
+}
