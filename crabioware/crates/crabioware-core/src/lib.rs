@@ -5,8 +5,11 @@
 #![cfg_attr(test, test_runner(agb::test_runner::test_runner))]
 extern crate alloc;
 
-mod registry;
-pub use registry::GameRunner;
+pub mod ecs;
+pub mod games;
+pub mod physics;
+pub mod screens;
+pub mod types;
 
 #[cfg(test)]
 #[agb::entry]

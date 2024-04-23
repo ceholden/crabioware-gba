@@ -3,12 +3,14 @@
 #![cfg_attr(test, feature(custom_test_frameworks))]
 #![cfg_attr(test, reexport_test_harness_main = "test_main")]
 #![cfg_attr(test, test_runner(agb::test_runner::test_runner))]
-
 extern crate alloc;
 use alloc::boxed::Box;
 
 use agb::println;
-use crabioware::games::{Game, GameDifficulty, GameState, Games, PauseScreen};
+use crabioware_core::games::{GameDifficulty, GameState, Games, RunnableGame};
+use crabioware_core::screens::PauseScreen;
+
+use crabioware::GameRunner;
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
@@ -26,7 +28,7 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut buttons = agb::input::ButtonController::new();
     let mut rng = agb::rng::RandomNumberGenerator::new();
 
-    let mut selected_game: Box<dyn Game> =
+    let mut selected_game: Box<dyn RunnableGame> =
         Games::Start.new(&difficulty, &mut sprite_loader, &mut rng);
     let mut pause = PauseScreen::unpaused(Games::Start);
 

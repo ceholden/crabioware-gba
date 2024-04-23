@@ -5,9 +5,6 @@
 #![cfg_attr(test, test_runner(agb::test_runner::test_runner))]
 extern crate alloc;
 
-mod registry;
-pub use registry::GameRunner;
-
 #[cfg(test)]
 #[agb::entry]
 fn agb_test_main(gba: agb::Gba) -> ! {
@@ -16,3 +13,4 @@ fn agb_test_main(gba: agb::Gba) -> ! {
         agb::syscall::halt();
     }
 }
+

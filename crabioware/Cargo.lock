@@ -220,10 +220,50 @@ name = "crabioware"
 version = "0.1.0"
 dependencies = [
  "agb",
+ "crabioware-core",
+ "crabioware-pong",
+ "crabioware-snake",
+]
+
+[[package]]
+name = "crabioware-artillery"
+version = "0.1.0"
+
+[[package]]
+name = "crabioware-core"
+version = "0.1.0"
+dependencies = [
+ "agb",
  "anymap",
  "hashbrown 0.14.3",
  "itertools 0.12.1",
  "slotmap",
+]
+
+[[package]]
+name = "crabioware-paccrab"
+version = "0.1.0"
+dependencies = [
+ "agb",
+ "crabioware-core",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "crabioware-pong"
+version = "0.1.0"
+dependencies = [
+ "agb",
+ "crabioware-core",
+]
+
+[[package]]
+name = "crabioware-snake"
+version = "0.1.0"
+dependencies = [
+ "agb",
+ "crabioware-core",
 ]
 
 [[package]]
@@ -339,6 +379,12 @@ checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
 dependencies = [
  "either",
 ]
+
+[[package]]
+name = "itoa"
+version = "1.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
 
 [[package]]
 name = "libc"
@@ -480,6 +526,43 @@ name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
+
+[[package]]
+name = "ryu"
+version = "1.0.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e86697c916019a8588c99b5fac3cead74ec0b4b819707a682fd4d23fa0ce1ba1"
+
+[[package]]
+name = "serde"
+version = "1.0.198"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9846a40c979031340571da2545a4e5b7c4163bdae79b301d5f86d03979451fcc"
+dependencies = [
+ "serde_derive",
+]
+
+[[package]]
+name = "serde_derive"
+version = "1.0.198"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e88edab869b01783ba905e7d0153f9fc1a6505a96e4ad3018011eedb838566d9"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "serde_json"
+version = "1.0.116"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e17db7126d17feb94eb3fad46bf1a96b034e8aacbc2e775fe81505f8b0b2813"
+dependencies = [
+ "itoa",
+ "ryu",
+ "serde",
+]
 
 [[package]]
 name = "slotmap"

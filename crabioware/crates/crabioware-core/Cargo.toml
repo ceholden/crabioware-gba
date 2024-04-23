@@ -1,0 +1,13 @@
+[package]
+name = "crabioware-core"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+agb = { workspace = true }
+anymap = { version = "1.0.0-beta.2", default-features = false, features = ["hashbrown"] }
+hashbrown = "0.14.3"
+itertools = { version = "0.12.1", default-features = false }
+slotmap = { version = "1.0.7", default-features = false }

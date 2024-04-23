@@ -1,3 +1,5 @@
+
+
 #![no_std]
 #![no_main]
 #![cfg_attr(test, feature(custom_test_frameworks))]
@@ -5,8 +7,10 @@
 #![cfg_attr(test, test_runner(agb::test_runner::test_runner))]
 extern crate alloc;
 
-mod registry;
-pub use registry::GameRunner;
+mod components;
+mod graphics;
+mod snake;
+pub use snake::SnakeGame;
 
 #[cfg(test)]
 #[agb::entry]
