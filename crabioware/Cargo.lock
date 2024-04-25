@@ -221,6 +221,7 @@ version = "0.1.0"
 dependencies = [
  "agb",
  "crabioware-core",
+ "crabioware-paccrab",
  "crabioware-pong",
  "crabioware-snake",
 ]

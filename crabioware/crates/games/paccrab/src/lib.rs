@@ -5,6 +5,12 @@
 #![cfg_attr(test, test_runner(agb::test_runner::test_runner))]
 extern crate alloc;
 
+mod graphics;
+mod levels;
+mod paccrab;
+pub use paccrab::PacCrabGame;
+
+
 #[cfg(test)]
 #[agb::entry]
 fn agb_test_main(gba: agb::Gba) -> ! {

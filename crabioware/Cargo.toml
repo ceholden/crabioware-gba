@@ -6,6 +6,7 @@ members = [
 
 [workspace.dependencies]
 agb = "^0.18.0"
+itertools = { version = "0.12.1", default-features = false }
 
 [workspace.package]
 version = "0.1.0"
@@ -23,6 +24,7 @@ agb = { workspace = true }
 crabioware-core = { path = "crates/crabioware-core" }
 crabioware-pong = { path = "crates/games/pong" }
 crabioware-snake = { path = "crates/games/snake" }
+crabioware-paccrab = { path = "crates/games/paccrab" }
 
 [profile.dev]
 opt-level = 3

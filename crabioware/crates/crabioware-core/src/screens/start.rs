@@ -29,6 +29,10 @@ impl StartScreen {
                 game: Games::Snake,
                 sprite: SpriteTag::Snake,
             },
+            GameEntry {
+                game: Games::PacCrab,
+                sprite: SpriteTag::PacCrab,
+            },
         ];
         Self {
             time: 0i32,

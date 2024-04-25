@@ -4,6 +4,7 @@ use alloc::boxed::Box;
 use crabioware_core::screens::{GameOverScreen, StartScreen, VictoryScreen};
 use crabioware_pong::PongGame;
 use crabioware_snake::SnakeGame;
+use crabioware_paccrab::PacCrabGame;
 
 use crabioware_core::games::{GameDifficulty, Games, RunnableGame};
 
@@ -25,6 +26,7 @@ impl GameRunner for Games {
         match self {
             Self::Pong => Box::new(PongGame::new(&difficulty, loader, rng)),
             Self::Snake => Box::new(SnakeGame::new(&difficulty, loader, rng)),
+            Self::PacCrab => Box::new(PacCrabGame::new(&difficulty, loader, rng)),
             Self::Start => Box::new(StartScreen::new()),
             Self::GameOver => Box::new(GameOverScreen::new()),
             Self::Victory => Box::new(VictoryScreen::new()),
