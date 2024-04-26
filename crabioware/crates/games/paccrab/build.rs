@@ -23,7 +23,7 @@ mod tiled_export {
     use serde::Deserialize;
 
     pub fn export_tilemap(out_dir: &str, tilemap: &str) -> std::io::Result<()> {
-        println!("cargo:rerun-if-changed={tilemap}");
+        // println!("cargo:rerun-if-changed={tilemap}");
         let file = File::open(tilemap)?;
         let reader = BufReader::new(file);
 
@@ -62,10 +62,10 @@ mod tiled_export {
         writeln!(&mut writer, "// Tilemap data")?;
         for tile_type in tile_types.iter() {
             let tile_type_id = tile_types_to_ids.get(tile_type).unwrap();
-            let tile_type_upper = tile_type.to_uppercase();
             writeln!(
                 &mut writer,
-                "pub const {tile_type_upper}: i32 = {tile_type_id};"
+                "pub const {}: i32 = {tile_type_id};",
+                tile_type.to_uppercase()
             )?;
         }
         writeln!(&mut writer, "pub const TILE_DATA: &[u32] = &[{tile_info}];")?;
@@ -74,7 +74,7 @@ mod tiled_export {
     }
 
     pub fn export_level(out_dir: &str, level_file: &Path) -> std::io::Result<()> {
-        println!("cargo:rerun-if-changed={level_file:?}");
+        // println!("cargo:rerun-if-changed={level_file:?}");
         let file = File::open(level_file).expect("Cannot read level file {level_file}");
         let reader = BufReader::new(file);
 
@@ -160,6 +160,27 @@ mod tiled_export {
             }
         }
 
+        // PacCrab specific part...
+        writeln!(
+            &mut writer,
+            r#"
+use agb::fixnum::Vector2D;
+use crate::levels::Level;
+
+pub const fn get_level() -> Level {{
+    Level {{
+        walls: BACKGROUND,
+        path: PATH,
+        dimensions: Vector2D {{ x: WIDTH, y: HEIGHT }},
+        ghosts: POINTS_GHOST,
+        berries: POINTS_BERRY,
+        doors: POINTS_DOOR,
+        warps: POINTS_WARP,
+    }}
+}}
+"#
+        )?;
+
         Ok(())
     }
 
@@ -180,7 +201,7 @@ mod tiled_export {
 
     #[derive(Deserialize)]
     struct TiledObject {
-        #[serde(rename = "name")]
+        #[serde(rename = "type")]
         object_name: String,
         x: i32,
         y: i32,
