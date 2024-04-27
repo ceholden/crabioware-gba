@@ -56,7 +56,7 @@ impl PacCrabGame {
                     println!("x/y=({},{}) tile_id={}", x, y, tile_id);
                     bg.set_tile(
                         &mut vram,
-                        (x, y).into(),
+                        (x, y),
                         &tileset,
                         self.level.get_tilesetting(
                             tile_id as usize
@@ -65,7 +65,7 @@ impl PacCrabGame {
                 }
             }
             bg.commit(&mut vram);
-            bg.show();
+            bg.set_visible(true);
         }
     }
 }

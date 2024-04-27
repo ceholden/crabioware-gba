@@ -5,7 +5,7 @@ members = [
 ]
 
 [workspace.dependencies]
-agb = "^0.18.0"
+agb = "^0.19.1"
 itertools = { version = "0.12.1", default-features = false }
 
 [workspace.package]
