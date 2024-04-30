@@ -236,6 +236,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "crabioware-metagame"
+version = "0.1.0"
+dependencies = [
+ "agb",
+]
+
+[[package]]
 name = "crabioware-paccrab"
 version = "0.1.0"
 dependencies = [

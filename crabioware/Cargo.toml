@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/crabioware-core",
+    "crates/metagame",
     "crates/games/*",
 ]
 

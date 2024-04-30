@@ -1,0 +1,8 @@
+[package]
+name = "crabioware-metagame"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+agb = { workspace = true }
