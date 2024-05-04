@@ -82,10 +82,19 @@ impl GraphicsMode {
 }
 
 
-
 pub struct Mode0TileMap<'m> {
     pub bg1: MapLoan<'m, RegularMap>,
     pub bg2: MapLoan<'m, RegularMap>,
+    pub dirty: bool,
+}
+impl<'m> Mode0TileMap<'m> {
+    pub fn new(bg1: MapLoan<'m, RegularMap>, bg2: MapLoan<'m, RegularMap>) -> Self {
+        Self {
+            bg1,
+            bg2,
+            dirty: false,
+        }
+    }
 }
 
 

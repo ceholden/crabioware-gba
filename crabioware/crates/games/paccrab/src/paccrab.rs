@@ -1,5 +1,3 @@
-use core::borrow::BorrowMut;
-
 use agb::display::object::{OamIterator, ObjectUnmanaged, SpriteLoader};
 use agb::display::tiled::{RegularBackgroundSize, TileFormat, TiledMap};
 use agb::display::Priority;
@@ -19,14 +17,12 @@ use super::levels::{Level, Levels};
 pub struct PacCrabGame {
     time: i32,
     level: Level,
-    tiles_dirty: bool,
 }
 impl Default for PacCrabGame {
     fn default() -> Self {
         Self {
             time: 0i32,
             level: Levels::LEVEL_1.get_level(),
-            tiles_dirty: true,
         }
     }
 }
@@ -39,7 +35,6 @@ impl PacCrabGame {
         Self {
             time: 0i32,
             level: Levels::LEVEL_1.get_level(),
-            tiles_dirty: true,
         }
     }
 
@@ -47,7 +42,7 @@ impl PacCrabGame {
     //        let (tiled, mut vram) = gba.display.video.tiled0();
     // pub fn render_level(&mut self, gfx: &mut Tiled0Resource) {
     fn render_level<'g>(
-        &mut self,
+        &self,
         gfx: &mut Tiled0Resource,
         mode0: &mut Mode0TileMap,
     ) -> Option<()> {
@@ -55,23 +50,22 @@ impl PacCrabGame {
 
         let tileset = self.level.get_tileset();
 
-        loop {
-            for y in 0..20u16 {
-                for x in 0..30u16 {
-                    let tile_id = self.level.walls[(y * 30 + x) as usize] - 1;
-                    println!("x/y=({},{}) tile_id={}", x, y, tile_id);
-                    mode0.bg1.set_tile(
-                        &mut gfx.vram,
-                        (x, y),
-                        &tileset,
-                        self.level.get_tilesetting(tile_id as usize),
-                    );
-                }
+        for y in 0..20u16 {
+            for x in 0..30u16 {
+                let tile_id = self.level.walls[(y * 30 + x) as usize] - 1;
+                println!("x/y=({},{}) tile_id={}", x, y, tile_id);
+                mode0.bg1.set_tile(
+                    &mut gfx.vram,
+                    (x, y),
+                    &tileset,
+                    self.level.get_tilesetting(tile_id as usize),
+                );
             }
-            mode0.bg1.commit(&mut gfx.vram);
-            mode0.bg1.set_visible(true);
         }
-        self.tiles_dirty = false;
+        mode0.bg1.commit(&mut gfx.vram);
+        mode0.bg1.set_visible(true);
+        mode0.dirty = false;
+        Some(())
     }
 }
 impl RunnableGame for PacCrabGame {
@@ -85,7 +79,7 @@ impl RunnableGame for PacCrabGame {
         GraphicsMode::Mode0
     }
 
-    fn tilemaps<'g, 'm>(&'g self, graphics: &mut GraphicsResource<'g>) -> TileMap<'m> {
+    fn tilemaps<'g>(&'g self, graphics: &'g mut GraphicsResource<'g>) -> TileMap<'g> {
         let gfx = match graphics {
             GraphicsResource::Mode0(gfx) => gfx,
             _ => unimplemented!("WRONG MODE"),
@@ -100,11 +94,11 @@ impl RunnableGame for PacCrabGame {
             RegularBackgroundSize::Background32x32,
             TileFormat::FourBpp,
         );
-        TileMap::Mode0(Mode0TileMap { bg1, bg2 })
+        TileMap::Mode0(Mode0TileMap::new(bg1, bg2))
     }
 
     fn render_map<'g>(
-        &mut self,
+        &self,
         graphics: &mut GraphicsResource<'g>,
         tilemap: &mut TileMap<'g>,
     ) -> Option<()> {
@@ -112,17 +106,17 @@ impl RunnableGame for PacCrabGame {
             GraphicsResource::Mode0(gfx) => gfx,
             _ => unimplemented!("WRONG MODE"),
         };
-        let mode0 = match tilemap {
+        let mut mode0 = match tilemap {
             TileMap::Mode0(tilemap_) => tilemap_,
             _ => unimplemented!("WRONG MODE"),
         };
-        if self.tiles_dirty {
-            self.render_level(gfx, mode0);
+        if mode0.dirty {
+            self.render_level(gfx, &mut mode0);
         };
         Some(())
     }
 
-    fn render<'g>(&mut self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
+    fn render<'g>(&self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
         let gfx = match graphics {
             GraphicsResource::Mode0(gfx) => gfx,
             _ => unimplemented!("WRONG MODE"),

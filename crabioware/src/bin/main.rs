@@ -27,13 +27,13 @@ fn main(mut gba: agb::Gba) -> ! {
 
     let mut selected_game = PacCrabGame::default();
     let mut graphics = selected_game.renderer().create(&mut gba);
-    let tilemap = selected_game.tilemaps(graphics);
+    let mut tilemap = selected_game.tilemaps(&mut graphics);
 
     loop {
         buttons.update();
-        // selected_game.advance(1i32, &buttons);
-        // selected_game.render_map(&mut graphics, &mut tilemap);
-        selected_game.render(&mut graphics);
+        selected_game.advance(1i32, &buttons);
+        selected_game.render_map(&mut graphics, &mut tilemap);
+        // selected_game.render(&mut graphics);
     }
 
 

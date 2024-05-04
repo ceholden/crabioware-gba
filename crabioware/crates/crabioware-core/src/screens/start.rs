@@ -66,7 +66,7 @@ impl RunnableGame for StartScreen {
         GameState::Running(Games::Start)
     }
     // fn render(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
-    fn render<'g>(&mut self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
+    fn render<'g>(&self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
         let gfx = match graphics {
             GraphicsResource::NotTiled(gfx) => gfx,
             _ => unimplemented!("WRONG MODE")

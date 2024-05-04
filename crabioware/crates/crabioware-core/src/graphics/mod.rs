@@ -1,4 +1,7 @@
 // Tile graphics
 mod resources;
 
-pub use resources::{GraphicsMode, GraphicsResource, Graphics, Tiled0Resource, TileMap, Mode0TileMap};
+pub use resources::{
+    Graphics, GraphicsMode, GraphicsResource, Mode0TileMap, TileMap, Tiled0Resource,
+    NotTiledResource,
+};
