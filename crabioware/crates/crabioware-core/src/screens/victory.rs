@@ -3,6 +3,7 @@ use agb::display::{HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH};
 use agb::input::{Button, ButtonController};
 
 use crate::games::{Games, RunnableGame, GameState};
+use crate::graphics::GraphicsResource;
 
 use super::graphics::SpriteTag;
 
@@ -21,7 +22,15 @@ impl RunnableGame for VictoryScreen {
         }
         GameState::Running(Games::Victory)
     }
-    fn render(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
+    // fn render(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
+    fn render<'g>(&mut self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
+        let gfx = match graphics {
+            GraphicsResource::NotTiled(gfx) => gfx,
+            _ => unimplemented!("WRONG MODE")
+        };
+        let oam = &mut gfx.unmanaged.iter();
+        let loader = &mut gfx.sprite_loader;
+
         let sprite_tag = SpriteTag::Victory.tag().sprite(0);
         let mut object = ObjectUnmanaged::new(loader.get_vram_sprite(sprite_tag));
 

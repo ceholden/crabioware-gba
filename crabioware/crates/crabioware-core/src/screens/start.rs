@@ -5,6 +5,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use crate::games::{Games, RunnableGame, GameState};
+use crate::graphics::GraphicsResource;
 
 use super::graphics::SpriteTag;
 
@@ -64,7 +65,15 @@ impl RunnableGame for StartScreen {
 
         GameState::Running(Games::Start)
     }
-    fn render(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
+    // fn render(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
+    fn render<'g>(&mut self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
+        let gfx = match graphics {
+            GraphicsResource::NotTiled(gfx) => gfx,
+            _ => unimplemented!("WRONG MODE")
+        };
+        let oam = &mut gfx.unmanaged.iter();
+        let loader = &mut gfx.sprite_loader;
+
         let x0 = 16u16;
         let dx = 16u16;
         let y0 = 48u16;

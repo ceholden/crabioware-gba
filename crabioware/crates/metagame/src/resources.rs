@@ -1,19 +1,22 @@
-use agb::{
-    display::{object::{OamIterator, OamUnmanaged, SpriteLoader}, tiled::{Tiled0, VRamManager}},
-    input::ButtonController, Gba,
-};
+use agb::{println, Gba};
+use agb::display::Priority;
+use agb::display::object::{OamUnmanaged, SpriteLoader};
+use agb::display::tiled::{MapLoan, RegularMap, TileFormat, RegularBackgroundSize, Tiled0, VRamManager};
+
 use alloc::boxed::Box;
 
 
-pub trait GraphicsResource<'g> {}
+pub trait GraphicsResource<'g> {
+    fn new(gba: &'g mut Gba) -> Self;
+}
 
 pub struct NotTiledResource<'g> {
     pub unmanaged: Box<OamUnmanaged<'g>>,
     pub sprite_loader: Box<SpriteLoader>,
 }
-impl<'g> NotTiledResource<'g> {
+impl<'g> GraphicsResource<'g> for NotTiledResource<'g> {
 
-    pub fn new(gba: &'g mut Gba) -> Self {
+    fn new(gba: &'g mut Gba) -> Self {
         let (unmanaged, sprite_loader) = gba.display.object.get_unmanaged();
         Self {
             unmanaged: Box::new(unmanaged),
@@ -21,45 +24,38 @@ impl<'g> NotTiledResource<'g> {
         }
     }
 }
-impl<'g> GraphicsResource<'g> for NotTiledResource<'g> {}
 
+
+// Specification for how to create a background layer
+pub struct BackgroundSpec {
+    priority: Priority,
+    size: RegularBackgroundSize,
+    colours: TileFormat,
+}
 
 pub struct Tiled0Resource<'g> {
-    pub tiled: Box<Tiled0<'g>>,
-    pub vram: Box<VRamManager>,
     pub unmanaged: Box<OamUnmanaged<'g>>,
     pub sprite_loader: Box<SpriteLoader>,
+    pub vram: Box<VRamManager>,
+    pub bg1: Box<MapLoan<'g, RegularMap>>,
+    pub bg2: Box<MapLoan<'g, RegularMap>>,
 }
-impl<'g> Tiled0Resource<'g> {
+impl<'g> GraphicsResource<'g> for Tiled0Resource<'g> {
 
-    pub fn new(gba: &'g mut Gba) -> Self {
+    fn new(gba: &'g mut Gba) -> Self {
+        println!("HELLO GRAPHICS");
         let (tiled, vram) = gba.display.video.tiled0();
         let (unmanaged, sprite_loader) = gba.display.object.get_unmanaged();
+        let bg1 = tiled.background(Priority::P0, RegularBackgroundSize::Background32x32, TileFormat::FourBpp);
+        let bg2 = tiled.background(Priority::P1, RegularBackgroundSize::Background32x32, TileFormat::FourBpp);
         Self {
-            tiled: Box::new(tiled),
             vram: Box::new(vram),
             unmanaged: Box::new(unmanaged),
             sprite_loader: Box::new(sprite_loader),
+            bg1: Box::new(bg1),
+            bg2: Box::new(bg2),
         }
     }
-}
-impl<'g> GraphicsResource<'g> for Tiled0Resource<'g> {}
-
-
-pub trait RenderableGame {
-
-    fn setup<'g>(&mut self, gba: &'g mut Gba) -> TileModeResource<'g>;
-    fn render<'g, G:GraphicsResource<'g>>(&self, graphics: &'g G) -> Option<()>;
-}
-
-pub trait RunnableGame : RenderableGame {
-
-    fn advance(&mut self, time: i32, buttons: &ButtonController);
-}
-
-pub trait Tiled0Game {
-
-
 }
 
 

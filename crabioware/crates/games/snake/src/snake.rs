@@ -8,7 +8,7 @@ use alloc::vec::Vec;
 
 use crabioware_core::{
     ecs::{EntityId, World},
-    games::{RunnableGame, GameDifficulty, GameState, Games},
+    games::{GameDifficulty, GameState, Games, RunnableGame}, graphics::GraphicsResource,
 };
 
 use super::components::{DirectionComponent, SpriteComponent, TileComponent};
@@ -309,7 +309,15 @@ impl RunnableGame for SnakeGame {
         }
     }
 
-    fn render(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
+    // fn render(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
+    fn render<'g>(&mut self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
+        let gfx = match graphics {
+            GraphicsResource::NotTiled(gfx) => gfx,
+            _ => unimplemented!("WRONG MODE")
+        };
+        let oam = &mut gfx.unmanaged.iter();
+        let loader = &mut gfx.sprite_loader;
+
         self.renderer_digits(loader, oam);
 
         let iter = self

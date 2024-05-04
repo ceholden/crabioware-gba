@@ -3,6 +3,7 @@ use agb::display::{HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH};
 use agb::input::{Button, ButtonController};
 
 use crate::games::{Games, RunnableGame, GameState};
+use crate::graphics::GraphicsResource;
 
 use super::graphics::SpriteTag;
 
@@ -39,7 +40,15 @@ impl RunnableGame for PauseScreen {
             false => GameState::Running(self.game),
         }
     }
-    fn render(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
+    // fn render(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
+    fn render<'g>(&mut self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
+        let gfx = match graphics {
+            GraphicsResource::NotTiled(gfx) => gfx,
+            _ => unimplemented!("WRONG MODE")
+        };
+        let oam = &mut gfx.unmanaged.iter();
+        let loader = &mut gfx.sprite_loader;
+
         if !self.paused {
             return None;
         }

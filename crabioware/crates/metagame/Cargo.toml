@@ -6,3 +6,4 @@ edition.workspace = true
 
 [dependencies]
 agb = { workspace = true }
+crabioware-core = { path = "../crabioware-core/" }

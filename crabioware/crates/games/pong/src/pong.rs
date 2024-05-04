@@ -12,7 +12,7 @@ use agb::{
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crabioware_core::games::{GameDifficulty, RunnableGame};
+use crabioware_core::{games::{GameDifficulty, RunnableGame}, graphics::GraphicsResource};
 use crabioware_core::physics::Intersects;
 use crabioware_core::types::VecMath;
 use crabioware_core::types::{Number, Rect, RectMath, Vector2D};
@@ -619,7 +619,15 @@ impl RunnableGame for PongGame {
     }
 
     // TODO: split into 2 steps - create sprite objects & then render according to z-axis
-    fn render(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
+    // fn render<'g>(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
+    fn render<'g>(&mut self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
+        let gfx = match graphics {
+            GraphicsResource::NotTiled(gfx) => gfx,
+            _ => unimplemented!("WRONG MODE")
+        };
+        let oam = &mut gfx.unmanaged.iter();
+        let loader = &mut gfx.sprite_loader;
+
         self.renderer_digits(loader, oam, self.game_state.player_score, Side::LEFT);
         self.renderer_digits(loader, oam, self.game_state.opponent_score, Side::RIGHT);
 
