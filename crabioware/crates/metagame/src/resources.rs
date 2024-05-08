@@ -7,7 +7,7 @@ use agb::{println, Gba};
 use alloc::boxed::Box;
 
 pub trait Graphics<'g> {
-    fn new(gba: &'g mut Gba, tiles: Box<dyn Fn(TileMode<'g>) -> TileMap<'g>>) -> Self;
+    fn new(gba: &'g mut Gba) -> Self;
 }
 
 pub struct NotTiledResource<'g> {
@@ -15,7 +15,7 @@ pub struct NotTiledResource<'g> {
     pub sprite_loader: SpriteLoader,
 }
 impl<'g> Graphics<'g> for NotTiledResource<'g> {
-    fn new(gba: &'g mut Gba, tiles: Box<dyn Fn(TileMode<'g>) -> TileMap<'g>>) -> Self {
+    fn new(gba: &'g mut Gba) -> Self {
         let (unmanaged, sprite_loader) = gba.display.object.get_unmanaged();
         Self {
             unmanaged,
@@ -37,24 +37,13 @@ pub enum TileMode<'g> {
 // }
 
 pub struct Mode0Resource<'g> {
-    pub vram: VRamManager,
-    pub unmanaged: OamUnmanaged<'g>,
-    pub sprite_loader: SpriteLoader,
-    pub tilemap: Mode0TileMap<'g>,
+    pub tile0: Tiled0<'g>,
 }
 impl<'g> Graphics<'g> for Mode0Resource<'g> {
-    fn new(gba: &'g mut Gba, tiles: Box<dyn Fn(TileMode<'g>) -> TileMap<'g>>) -> Self {
-        let (tiled, vram) = gba.display.video.tiled0();
-        let (unmanaged, sprite_loader) = gba.display.object.get_unmanaged();
-        let tilemap = match tiles(TileMode::Mode0(tiled)) {
-            TileMap::Mode0(tilemap) => tilemap,
-            _ => unimplemented!("WRONG MODE")
-        };
+    fn new(gba: &'g mut Gba) -> Self {
+        let (tile0, _) = gba.display.video.tiled0();
         Self {
-            vram,
-            unmanaged,
-            sprite_loader,
-            tilemap,
+            tile0,
         }
     }
 }
@@ -64,14 +53,10 @@ pub enum GraphicsMode {
     Mode0,
 }
 impl GraphicsMode {
-    pub fn create<'g>(
-        &self,
-        gba: &'g mut Gba,
-        tiles: Box<dyn Fn(TileMode<'g>) -> TileMap<'g>>,
-    ) -> GraphicsResource<'g> {
+    pub fn create<'g>(&self, gba: &'g mut Gba) -> GraphicsResource<'g> {
         match self {
-            GraphicsMode::NotTiled => GraphicsResource::NotTiled(NotTiledResource::new(gba, tiles)),
-            GraphicsMode::Mode0 => GraphicsResource::Mode0(Mode0Resource::new(gba, tiles)),
+            GraphicsMode::NotTiled => GraphicsResource::NotTiled(NotTiledResource::new(gba)),
+            GraphicsMode::Mode0 => GraphicsResource::Mode0(Mode0Resource::new(gba)),
         }
     }
 }
@@ -82,15 +67,15 @@ pub enum GraphicsResource<'g> {
 }
 
 pub struct Mode0TileMap<'m> {
-    pub bg1: Box<MapLoan<'m, RegularMap>>,
-    pub bg2: Box<MapLoan<'m, RegularMap>>,
+    pub bg1: MapLoan<'m, RegularMap>,
     pub dirty: bool,
 }
 impl<'m> Mode0TileMap<'m> {
-    pub fn new(bg1: Box<MapLoan<'m, RegularMap>>, bg2: Box<MapLoan<'m, RegularMap>>) -> Self {
+    pub fn new(
+        bg1: MapLoan<'m, RegularMap>,
+    ) -> Self {
         Self {
             bg1,
-            bg2,
             dirty: false,
         }
     }
