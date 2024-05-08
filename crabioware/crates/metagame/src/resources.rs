@@ -10,20 +10,6 @@ pub trait Graphics<'g> {
     fn new(gba: &'g mut Gba) -> Self;
 }
 
-pub struct NotTiledResource<'g> {
-    pub unmanaged: OamUnmanaged<'g>,
-    pub sprite_loader: SpriteLoader,
-}
-impl<'g> Graphics<'g> for NotTiledResource<'g> {
-    fn new(gba: &'g mut Gba) -> Self {
-        let (unmanaged, sprite_loader) = gba.display.object.get_unmanaged();
-        Self {
-            unmanaged,
-            sprite_loader,
-        }
-    }
-}
-
 pub enum TileMode<'g> {
     NotTiled,
     Mode0(Tiled0<'g>),
@@ -37,32 +23,30 @@ pub enum TileMode<'g> {
 // }
 
 pub struct Mode0Resource<'g> {
-    pub tile0: Tiled0<'g>,
-}
-impl<'g> Graphics<'g> for Mode0Resource<'g> {
-    fn new(gba: &'g mut Gba) -> Self {
-        let (tile0, _) = gba.display.video.tiled0();
-        Self {
-            tile0,
-        }
-    }
+    pub tiled: Tiled0<'g>,
 }
 
-pub enum GraphicsMode {
+pub enum TiledMode {
     NotTiled,
     Mode0,
 }
-impl GraphicsMode {
-    pub fn create<'g>(&self, gba: &'g mut Gba) -> GraphicsResource<'g> {
+impl TiledMode {
+    pub fn create<'g>(&self, gba: &'g mut Gba) -> (TiledResource<'g>, VRamManager) {
         match self {
-            GraphicsMode::NotTiled => GraphicsResource::NotTiled(NotTiledResource::new(gba)),
-            GraphicsMode::Mode0 => GraphicsResource::Mode0(Mode0Resource::new(gba)),
+            TiledMode::NotTiled => {
+                let (_, vram) = gba.display.video.tiled0();
+                (TiledResource::NotTiled, vram)
+            }
+            TiledMode::Mode0 => {
+                let (tiled0, vram) = gba.display.video.tiled0();
+                (TiledResource::Mode0(Mode0Resource { tiled: tiled0 }), vram)
+            }
         }
     }
 }
 
-pub enum GraphicsResource<'g> {
-    NotTiled(NotTiledResource<'g>),
+pub enum TiledResource<'g> {
+    NotTiled,
     Mode0(Mode0Resource<'g>),
 }
 
@@ -71,17 +55,12 @@ pub struct Mode0TileMap<'m> {
     pub dirty: bool,
 }
 impl<'m> Mode0TileMap<'m> {
-    pub fn new(
-        bg1: MapLoan<'m, RegularMap>,
-    ) -> Self {
-        Self {
-            bg1,
-            dirty: false,
-        }
+    pub fn new(bg1: MapLoan<'m, RegularMap>) -> Self {
+        Self { bg1, dirty: false }
     }
 }
 
-pub enum TileMap<'m> {
+pub enum TileModeMap<'m> {
     NotTiled,
     Mode0(Mode0TileMap<'m>),
 }
