@@ -15,7 +15,8 @@ use crabioware_metagame::graphics::test;
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
 
-    let vblank = agb::interrupt::VBlank::get();
+    test(&mut gba);
+
 //    let (gfx, mut vram) = gba.display.video.tiled0();
 //
 //    vram.set_background_palettes(&[Palette16::new([
@@ -58,10 +59,7 @@ fn main(mut gba: agb::Gba) -> ! {
 //    bg.commit(&mut vram);
 //    bg.set_visible(true);
 
-    loop {
-        test(&mut gba);
-        vblank.wait_for_vblank();
-    }
+
 }
 
 
