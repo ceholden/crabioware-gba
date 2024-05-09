@@ -5,5 +5,6 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-agb = { workspace = true }
+# agb = { workspace = true }
+agb = { path = "../../../../agb/agb" }
 # crabioware-core = { path = "../crabioware-core/" }

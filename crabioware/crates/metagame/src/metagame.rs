@@ -3,12 +3,10 @@ use alloc::boxed::Box;
 
 use crate::graphics::{Game, Games};
 
-
 pub enum MetaGameState {
     START(Games),
     RUNNING,
 }
-
 
 pub trait MetaGame {
     fn pick(&self) -> Games {
