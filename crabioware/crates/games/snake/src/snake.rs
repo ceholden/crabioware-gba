@@ -8,7 +8,8 @@ use alloc::vec::Vec;
 
 use crabioware_core::{
     ecs::{EntityId, World},
-    games::{GameDifficulty, GameState, Games, RunnableGame}, graphics::GraphicsResource,
+    games::{GameDifficulty, GameState, Games, RunnableGame},
+    graphics::GraphicsResource,
 };
 
 use super::components::{DirectionComponent, SpriteComponent, TileComponent};
@@ -213,7 +214,8 @@ impl SnakeGame {
         if berries_eaten > 0 {
             let tail = self
                 .world
-                .entry::<&TileComponent>(&self.body[body_length - 1]).clone();
+                .entry::<&TileComponent>(&self.body[body_length - 1])
+                .clone();
             for _ in 0..berries_eaten {
                 let new_tail = Body::new(tail.clone()).create(&mut self.world);
                 self.body.push(new_tail);
@@ -313,7 +315,7 @@ impl RunnableGame for SnakeGame {
     fn render<'g>(&self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
         let gfx = match graphics {
             GraphicsResource::NotTiled(gfx) => gfx,
-            _ => unimplemented!("WRONG MODE")
+            _ => unimplemented!("WRONG MODE"),
         };
         let oam = &mut gfx.unmanaged.iter();
         let loader = &mut gfx.sprite_loader;

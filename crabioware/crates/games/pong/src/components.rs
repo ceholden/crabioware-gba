@@ -33,7 +33,6 @@ impl LocationComponent {
             angle: num!(0.),
         }
     }
-
 }
 impl Component for LocationComponent {}
 

@@ -2,9 +2,9 @@ use agb::{display::object::SpriteLoader, rng::RandomNumberGenerator};
 use alloc::boxed::Box;
 
 use crabioware_core::screens::{GameOverScreen, StartScreen, VictoryScreen};
+use crabioware_paccrab::PacCrabGame;
 use crabioware_pong::PongGame;
 use crabioware_snake::SnakeGame;
-use crabioware_paccrab::PacCrabGame;
 
 use crabioware_core::games::{GameDifficulty, Games, RunnableGame};
 

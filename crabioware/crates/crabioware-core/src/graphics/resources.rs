@@ -81,7 +81,6 @@ impl GraphicsMode {
     }
 }
 
-
 pub struct Mode0TileMap<'m> {
     pub bg1: MapLoan<'m, RegularMap>,
     pub bg2: MapLoan<'m, RegularMap>,
@@ -96,7 +95,6 @@ impl<'m> Mode0TileMap<'m> {
         }
     }
 }
-
 
 pub enum TileMap<'m> {
     NotTiled,

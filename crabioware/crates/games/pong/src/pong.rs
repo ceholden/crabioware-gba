@@ -12,13 +12,16 @@ use agb::{
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crabioware_core::{games::{GameDifficulty, RunnableGame}, graphics::GraphicsResource};
 use crabioware_core::physics::Intersects;
 use crabioware_core::types::VecMath;
 use crabioware_core::types::{Number, Rect, RectMath, Vector2D};
 use crabioware_core::{
     ecs::{EntityId, World},
     games::{GameState, Games},
+};
+use crabioware_core::{
+    games::{GameDifficulty, RunnableGame},
+    graphics::GraphicsResource,
 };
 
 use crate::components::{
@@ -623,7 +626,7 @@ impl RunnableGame for PongGame {
     fn render<'g>(&self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
         let gfx = match graphics {
             GraphicsResource::NotTiled(gfx) => gfx,
-            _ => unimplemented!("WRONG MODE")
+            _ => unimplemented!("WRONG MODE"),
         };
         let oam = &mut gfx.unmanaged.iter();
         let loader = &mut gfx.sprite_loader;

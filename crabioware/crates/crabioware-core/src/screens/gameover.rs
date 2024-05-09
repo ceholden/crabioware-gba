@@ -3,7 +3,7 @@ use agb::display::{HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH};
 use agb::input::{Button, ButtonController};
 use agb::println;
 
-use crate::games::{Games, RunnableGame, GameState};
+use crate::games::{GameState, Games, RunnableGame};
 use crate::graphics::GraphicsResource;
 
 use super::graphics::SpriteTag;
@@ -30,7 +30,7 @@ impl RunnableGame for GameOverScreen {
     fn render<'g>(&self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
         let gfx = match graphics {
             GraphicsResource::NotTiled(gfx) => gfx,
-            _ => unimplemented!("WRONG MODE")
+            _ => unimplemented!("WRONG MODE"),
         };
         let oam = &mut gfx.unmanaged.iter();
         let loader = &mut gfx.sprite_loader;

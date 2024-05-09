@@ -10,7 +10,6 @@ mod levels;
 mod paccrab;
 pub use paccrab::PacCrabGame;
 
-
 #[cfg(test)]
 #[agb::entry]
 fn agb_test_main(gba: agb::Gba) -> ! {
@@ -19,4 +18,3 @@ fn agb_test_main(gba: agb::Gba) -> ! {
         agb::syscall::halt();
     }
 }
-

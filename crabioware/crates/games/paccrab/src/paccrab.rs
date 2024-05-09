@@ -41,11 +41,7 @@ impl PacCrabGame {
     //    pub fn test(self, mut gba: agb::Gba) {
     //        let (tiled, mut vram) = gba.display.video.tiled0();
     // pub fn render_level(&mut self, gfx: &mut Tiled0Resource) {
-    fn render_level<'g>(
-        &self,
-        gfx: &mut Tiled0Resource,
-        mode0: &mut Mode0TileMap,
-    ) -> Option<()> {
+    fn render_level<'g>(&self, gfx: &mut Tiled0Resource, mode0: &mut Mode0TileMap) -> Option<()> {
         self.level.set_background_paelttes(&mut gfx.vram);
 
         let tileset = self.level.get_tileset();

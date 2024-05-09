@@ -14,7 +14,6 @@ pub struct Level {
     pub warps: &'static [(i32, i32)],
 }
 impl Level {
-
     pub fn get_tileset(&self) -> TileSet<'_> {
         tile_sheet::tiles.tiles
     }
@@ -26,22 +25,18 @@ impl Level {
     pub fn set_background_paelttes(&self, vram: &mut VRamManager) {
         vram.set_background_palettes(tile_sheet::PALETTES);
     }
-
 }
 
 pub enum Levels {
     LEVEL_1,
 }
 impl Levels {
-
     pub fn get_level(&self) -> Level {
         match self {
             Levels::LEVEL_1 => tilemaps::level_1::get_level(),
         }
     }
-
 }
-
 
 mod tilemaps {
 
@@ -55,4 +50,3 @@ mod tilemaps {
         include!(concat!(env!("OUT_DIR"), "/level-1.json.rs"));
     }
 }
-

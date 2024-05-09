@@ -1,5 +1,3 @@
-
-
 #![no_std]
 #![no_main]
 #![cfg_attr(test, feature(custom_test_frameworks))]
