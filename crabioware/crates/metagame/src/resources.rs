@@ -44,6 +44,8 @@ impl TiledMode {
 
 pub trait TileMapResource {
     fn clear(&mut self, vram: &mut VRamManager);
+    fn set_visible(&mut self, is_visible: bool);
+    fn commit(&mut self, vram: &mut VRamManager);
 }
 
 pub struct Mode0TileMap<'m> {
@@ -75,6 +77,15 @@ impl<'m> TileMapResource for Mode0TileMap<'m> {
         self.bg2.clear(vram);
         self.bg3.clear(vram);
         self.bg4.clear(vram);
+    }
+
+    fn set_visible(&mut self, visible: bool) {
+        self.bg1.set_visible(visible);
+        self.bg2.set_visible(visible);
+        self.bg3.set_visible(visible);
+        self.bg4.set_visible(visible);
+    }
+    fn commit(&mut self, vram: &mut VRamManager) {
         self.bg1.commit(vram);
         self.bg2.commit(vram);
         self.bg3.commit(vram);
@@ -107,6 +118,13 @@ impl<'m> TileMapResource for Mode1TileMap<'m> {
         self.bg1.clear(vram);
         self.bg2.clear(vram);
         self.affine.clear(vram);
+    }
+    fn set_visible(&mut self, visible: bool) {
+        self.bg1.set_visible(visible);
+        self.bg2.set_visible(visible);
+        self.affine.set_visible(visible);
+    }
+    fn commit(&mut self, vram: &mut VRamManager) {
         self.bg1.commit(vram);
         self.bg2.commit(vram);
         self.affine.commit(vram);

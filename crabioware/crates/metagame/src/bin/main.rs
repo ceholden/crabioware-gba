@@ -13,13 +13,13 @@ use agb::{
     println,
 };
 
-use crabioware_metagame::graphics::{test, GamePicker};
+use crabioware_metagame::graphics::{test, GamePicker, Games};
 use crabioware_metagame::{MetaGame, MetaGameState};
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
     let picker = GamePicker::new();
-    let mut state = MetaGameState::START(picker.pick());
+    let mut state = MetaGameState::START(Games::GAME2);
 
     let mut idx = 0;
     loop {
