@@ -10,7 +10,7 @@ pub mod graphics;
 mod metagame;
 mod resources;
 
-pub use metagame::{MetaGame, MetaGameState};
+pub use metagame::{MetaGame, MetaGameState, MetaGameType};
 
 #[cfg(test)]
 #[agb::entry]

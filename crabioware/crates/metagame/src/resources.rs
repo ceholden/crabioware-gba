@@ -28,7 +28,6 @@ pub enum TiledMode {
 }
 impl TiledMode {
     pub fn create<'g>(&self, gba: &'g mut Gba) -> (TiledModeResource<'g>, VRamManager) {
-        println!("CREATING NEW TILE RESOURCE FOR {self:?}");
         match self {
             TiledMode::Mode0 => {
                 let (tiled0, vram) = gba.display.video.tiled0();

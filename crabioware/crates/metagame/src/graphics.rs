@@ -12,7 +12,7 @@ use alloc::boxed::Box;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::resources::{Mode0TileMap, Mode1TileMap, TileMapResource};
+use crate::{metagame::MetaGameType, resources::{Mode0TileMap, Mode1TileMap, TileMapResource}};
 use crate::{
     metagame::{MetaGame, MetaGameState},
     resources::{TiledMode, TiledModeResource},
@@ -31,7 +31,7 @@ pub trait Game<'a, 'b> {
     fn renderer(&self) -> TiledMode {
         TiledMode::Mode0
     }
-    fn init_tiles(&mut self, tiled: &'a TiledModeResource<'b>, vram: &mut VRamManager, vblank: &VBlank);
+    fn init_tiles(&mut self, tiled: &'a TiledModeResource<'b>, vram: &mut VRamManager);
     fn render(&self, vram: &mut VRamManager);
     fn clear(&mut self, vram: &mut VRamManager) {}
 }
@@ -65,16 +65,14 @@ impl<'a, 'b> Game<'a, 'b> for Mode1Game<'a> {
         }
     }
 
-    fn init_tiles(&mut self, tiled: &'a TiledModeResource<'b>, vram: &mut VRamManager, vblank: &VBlank) {
+    fn init_tiles(&mut self, tiled: &'a TiledModeResource<'b>, vram: &mut VRamManager) {
         let mode1 = match tiled {
             TiledModeResource::Mode1(gfx) => gfx,
             _ => unimplemented!("WRONG MODE"),
         };
 
         let tileset = water_tiles::water_tiles.tiles;
-        println!("WATER TILESET FORMAT={:?}", tileset.format());
 
-        println!("INIT TILES FOR MODE1");
         let mut bg1 = mode1.regular(
             Priority::P1,
             RegularBackgroundSize::Background32x32,
@@ -101,9 +99,7 @@ impl<'a, 'b> Game<'a, 'b> for Mode1Game<'a> {
         affine.set_visible(true);
 
         let mut tiles = Mode1TileMap::new(bg1, bg2, affine);
-
         tiles.commit(vram);
-        println!("DONE INIT TILES FOR MODE1");
     }
 
     fn clear(&mut self, vram: &mut VRamManager) {
@@ -182,7 +178,7 @@ impl<'a, 'b> Game<'a, 'b> for Mode0Game<'a> {
         }
     }
 
-    fn init_tiles(&mut self, tiled: &'a TiledModeResource<'b>, vram: &mut VRamManager, vblank: &VBlank) {
+    fn init_tiles(&mut self, tiled: &'a TiledModeResource<'b>, vram: &mut VRamManager) {
         println!("INIT TILES FOR MODE0");
         let mode0 = match tiled {
             TiledModeResource::Mode0(gfx) => gfx,
@@ -261,10 +257,55 @@ impl GamePicker {
             games: vec![Games::GAME1, Games::GAME2],
         }
     }
+
+    fn run_game(&self, selected_game: &Games, gba: &mut Gba, vblank: &VBlank) -> Option<Games> {
+        let (graphics, mut vram) = selected_game.renderer().create(gba);
+        let mut game = self.load(&selected_game);
+
+        game.init_tiles(&graphics, &mut vram);
+
+        let mut runs = 0u8;
+        loop {
+            match game.advance(1) {
+                GameState::RUN => {
+                    // println!("RENDERING {selected_game:?}");
+                    game.render(&mut vram);
+                }
+                state => {
+                    match state {
+                        GameState::WIN => {
+                            println!("YOU WIN");
+                        }
+                        GameState::LOSE => {
+                            println!("YOU LOSE");
+                        },
+                        _ => panic!("wrong")
+                    };
+                    runs += 1;
+                    game.clear(&mut vram);
+                    vblank.wait_for_vblank();
+                    if runs < 5 {
+                        return Some(self.next(selected_game));
+                    }
+                    else {
+                        return None
+                    }
+                }
+            }
+            vblank.wait_for_vblank();
+        }
+    }
 }
 impl MetaGame for GamePicker {
-    fn run(&self, gba: &mut Gba, state: &MetaGameState) -> MetaGameState {
-        MetaGameState::RUNNING
+    fn run(&self, gba: &mut Gba, vblank: &VBlank) -> MetaGameState {
+        let mut selected_game: Option<Games> = Some(self.pick());
+        loop {
+            selected_game = match selected_game {
+                Some(game) => self.run_game(&game, gba, vblank),
+                None => break
+            }
+        }
+        MetaGameState::WIN
     }
     fn load(&self, game: &Games) -> Box<dyn Game + '_> {
         match game {
@@ -274,46 +315,45 @@ impl MetaGame for GamePicker {
     }
 }
 
-pub fn test(gba: &mut Gba, metagame: &impl MetaGame, state: &MetaGameState) -> MetaGameState {
-    let vblank = agb::interrupt::VBlank::get();
-
-    let mut selected_game = *match state {
-        MetaGameState::RUNNING => unimplemented!("SHOULD NOT BE RUNNING"),
-        MetaGameState::START(game) => game,
-    };
-
-    let (graphics, mut vram) = selected_game.renderer().create(gba);
-    let mut game = metagame.load(&selected_game);
-    // game.clear(&mut vram);
-    game.init_tiles(&graphics, &mut vram, &vblank);
-
-    loop {
-        match game.advance(1) {
-            GameState::RUN => {
-                // println!("RENDERING {selected_game:?}");
-                game.render(&mut vram);
-            }
-            GameState::WIN => {
-                println!("YOU WIN");
-                selected_game = metagame.next(&selected_game);
-                game.clear(&mut vram);
-                vblank.wait_for_vblank();
-                return MetaGameState::START(selected_game);
-                // game = game_runner.load(&selected_game);
-                // let (graphics, vram) = game.renderer().create(gba);
-                // game.init_tiles(&graphics, &mut vram);
-            }
-            GameState::LOSE => {
-                println!("YOU LOSE");
-                selected_game = metagame.next(&selected_game);
-                game.clear(&mut vram);
-                vblank.wait_for_vblank();
-                return MetaGameState::START(selected_game);
-                // game = game_runner.load(&selected_game);
-                // let (graphics, vram) = game.renderer().create(gba);
-                // game.init_tiles(&graphics, &mut vram);
-            }
-        }
-        vblank.wait_for_vblank();
-    }
-}
+// pub fn test(gba: &mut Gba, metagame: &impl MetaGame, state: &MetaGameState) -> MetaGameState {
+// 
+//     let mut selected_game = *match state {
+//         MetaGameState::RUNNING(game) => unimplemented!("SHOULD NOT BE RUNNING"),
+//         MetaGameState::START => game,
+//     };
+// 
+//     let (graphics, mut vram) = selected_game.renderer().create(gba);
+//     let mut game = metagame.load(&selected_game);
+//     // game.clear(&mut vram);
+//     game.init_tiles(&graphics, &mut vram, &vblank);
+// 
+//     loop {
+//         match game.advance(1) {
+//             GameState::RUN => {
+//                 // println!("RENDERING {selected_game:?}");
+//                 game.render(&mut vram);
+//             }
+//             GameState::WIN => {
+//                 println!("YOU WIN");
+//                 selected_game = metagame.next(&selected_game);
+//                 game.clear(&mut vram);
+//                 vblank.wait_for_vblank();
+//                 return MetaGameState::START(selected_game);
+//                 // game = game_runner.load(&selected_game);
+//                 // let (graphics, vram) = game.renderer().create(gba);
+//                 // game.init_tiles(&graphics, &mut vram);
+//             }
+//             GameState::LOSE => {
+//                 println!("YOU LOSE");
+//                 selected_game = metagame.next(&selected_game);
+//                 game.clear(&mut vram);
+//                 vblank.wait_for_vblank();
+//                 return MetaGameState::START(selected_game);
+//                 // game = game_runner.load(&selected_game);
+//                 // let (graphics, vram) = game.renderer().create(gba);
+//                 // game.init_tiles(&graphics, &mut vram);
+//             }
+//         }
+//         vblank.wait_for_vblank();
+//     }
+// }
