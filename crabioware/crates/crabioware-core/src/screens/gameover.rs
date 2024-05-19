@@ -3,7 +3,7 @@ use agb::display::{HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH};
 use agb::input::{Button, ButtonController};
 use agb::println;
 
-use crate::games::{GameState, Games, RunnableGame};
+use crate::games::{GameState, Games, Game};
 use crate::graphics::GraphicsResource;
 
 use super::graphics::SpriteTag;

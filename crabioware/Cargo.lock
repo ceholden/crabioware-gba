@@ -11,39 +11,17 @@ checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 [[package]]
 name = "agb"
 version = "0.19.1"
-dependencies = [
- "agb_fixnum 0.19.1",
- "agb_hashmap 0.19.1",
- "agb_image_converter 0.19.1",
- "agb_macros 0.19.1",
- "agb_sound_converter 0.19.1",
- "bare-metal",
- "bilge",
- "bitflags 2.4.2",
-]
-
-[[package]]
-name = "agb"
-version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15841435cd041b2c78a6676d40afcc3a9d5ca7370242a533a4d018ac2795e794"
 dependencies = [
- "agb_fixnum 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "agb_hashmap 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "agb_image_converter 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "agb_macros 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "agb_sound_converter 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "agb_fixnum",
+ "agb_hashmap",
+ "agb_image_converter",
+ "agb_macros",
+ "agb_sound_converter",
  "bare-metal",
  "bilge",
  "bitflags 2.4.2",
-]
-
-[[package]]
-name = "agb_fixnum"
-version = "0.19.1"
-dependencies = [
- "agb_macros 0.19.1",
- "num",
 ]
 
 [[package]]
@@ -52,15 +30,8 @@ version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fcb6bf8653e1e330926b27b1a4fa273c03df0bbefd665701a7e9f301849bb4c7"
 dependencies = [
- "agb_macros 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "agb_macros",
  "num",
-]
-
-[[package]]
-name = "agb_hashmap"
-version = "0.19.1"
-dependencies = [
- "rustc-hash",
 ]
 
 [[package]]
@@ -70,18 +41,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10059c4f6689aa922c875f15f06c1f13fa449d116476025b4527172a2b8207c3"
 dependencies = [
  "rustc-hash",
-]
-
-[[package]]
-name = "agb_image_converter"
-version = "0.19.1"
-dependencies = [
- "asefile",
- "fontdue",
- "image",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -101,28 +60,9 @@ dependencies = [
 [[package]]
 name = "agb_macros"
 version = "0.19.1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "agb_macros"
-version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "44f0d71d3b51ba69b91b475668beaa2f0216bb83e1562b04ff13bccc7d3bf68e"
 dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "agb_sound_converter"
-version = "0.19.1"
-dependencies = [
- "hound",
  "proc-macro2",
  "quote",
  "syn",
@@ -273,7 +213,7 @@ checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
 name = "crabioware"
 version = "0.1.0"
 dependencies = [
- "agb 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "agb",
  "crabioware-core",
  "crabioware-paccrab",
  "crabioware-pong",
@@ -288,7 +228,7 @@ version = "0.1.0"
 name = "crabioware-core"
 version = "0.1.0"
 dependencies = [
- "agb 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "agb",
  "anymap",
  "hashbrown 0.14.3",
  "itertools 0.12.1",
@@ -299,14 +239,14 @@ dependencies = [
 name = "crabioware-metagame"
 version = "0.1.0"
 dependencies = [
- "agb 0.19.1",
+ "agb",
 ]
 
 [[package]]
 name = "crabioware-paccrab"
 version = "0.1.0"
 dependencies = [
- "agb 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "agb",
  "crabioware-core",
  "itertools 0.12.1",
  "serde",
@@ -317,7 +257,7 @@ dependencies = [
 name = "crabioware-pong"
 version = "0.1.0"
 dependencies = [
- "agb 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "agb",
  "crabioware-core",
 ]
 
@@ -325,7 +265,7 @@ dependencies = [
 name = "crabioware-snake"
 version = "0.1.0"
 dependencies = [
- "agb 0.19.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "agb",
  "crabioware-core",
 ]
 

@@ -1,10 +1,8 @@
 // Pong
 use agb::{
-    display::affine::AffineMatrix,
-    display::object::{
+    display::{affine::AffineMatrix, object::{
         AffineMatrixInstance, AffineMode, OamIterator, ObjectUnmanaged, SpriteLoader,
-    },
-    display::{HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH},
+    }, tiled::VRamManager, HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH},
     fixnum::num,
     input::{ButtonController, Tri},
     rng::RandomNumberGenerator,
@@ -12,6 +10,7 @@ use agb::{
 use alloc::vec;
 use alloc::vec::Vec;
 
+use crabioware_core::graphics::{Mode0TileMap, TileMode, TileMapResource, TileModeResource};
 use crabioware_core::physics::Intersects;
 use crabioware_core::types::VecMath;
 use crabioware_core::types::{Number, Rect, RectMath, Vector2D};
@@ -19,10 +18,7 @@ use crabioware_core::{
     ecs::{EntityId, World},
     games::{GameState, Games},
 };
-use crabioware_core::{
-    games::{GameDifficulty, RunnableGame},
-    graphics::GraphicsResource,
-};
+use crabioware_core::games::{GameDifficulty, Game};
 
 use crate::components::{
     CollisionComponent, LocationComponent, MaxSpeed, SpriteComponent, VelocityComponent,
@@ -229,7 +225,7 @@ impl Paddle {
 
 // TODO: add a "render cache" that helps us disconnect object setup and render
 //       e.g., so we can sort on z-axis or priority
-pub struct PongGame {
+pub struct PongGame<'a> {
     world: World,
     game_rng: RandomNumberGenerator,
     player: EntityId,
@@ -237,8 +233,9 @@ pub struct PongGame {
     balls: Vec<EntityId>,
     opponent_state: OpponentResource,
     game_state: GameStateResource,
+    tiles: Option<Mode0TileMap<'a>>,
 }
-impl PongGame {
+impl<'a> PongGame<'a> {
     pub fn new(
         difficulty: &GameDifficulty,
         _: &mut SpriteLoader,
@@ -278,6 +275,7 @@ impl PongGame {
             balls,
             opponent_state: OpponentResource::default(),
             game_state,
+            tiles: None,
         }
     }
 
@@ -611,7 +609,30 @@ impl PongGame {
     }
 }
 
-impl RunnableGame for PongGame {
+impl<'a, 'b> Game<'a, 'b> for PongGame<'a> {
+
+    fn renderer(&self) -> TileMode {
+        TileMode::Mode0
+    }
+
+    fn clear(&mut self, vram: &mut VRamManager) {
+        if let Some(tiles) = &mut self.tiles {
+            tiles.clear(vram);
+            tiles.commit(vram);
+        }
+    }
+
+    fn init_tiles(&mut self, tile_mode: &'a TileModeResource<'b>, vram: &mut VRamManager) {
+        let mode0 = match tile_mode {
+            TileModeResource::Mode0(mode0) => mode0,
+            _ => unimplemented!("WRONG MODE"),
+        };
+
+        let mut tiles = Mode0TileMap::default_32x32_4bpp(&mode0);
+        tiles.set_visible(true);
+        self.tiles = Some(tiles);
+    }
+
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
         self.system_player(time, &buttons);
         self.system_balls(time);
@@ -622,15 +643,12 @@ impl RunnableGame for PongGame {
     }
 
     // TODO: split into 2 steps - create sprite objects & then render according to z-axis
-    // fn render<'g>(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
-    fn render<'g>(&self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
-        let gfx = match graphics {
-            GraphicsResource::NotTiled(gfx) => gfx,
-            _ => unimplemented!("WRONG MODE"),
-        };
-        let oam = &mut gfx.unmanaged.iter();
-        let loader = &mut gfx.sprite_loader;
-
+    fn render(
+        &mut self,
+        loader: &mut SpriteLoader,
+        oam: &mut OamIterator,
+        vram: &mut VRamManager,
+    ) -> Option<()> {
         self.renderer_digits(loader, oam, self.game_state.player_score, Side::LEFT);
         self.renderer_digits(loader, oam, self.game_state.opponent_score, Side::RIGHT);
 

@@ -2,8 +2,7 @@ use agb::display::object::{OamIterator, ObjectUnmanaged, SpriteLoader};
 use agb::display::{HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH};
 use agb::input::{Button, ButtonController};
 
-use crate::games::{GameState, Games, RunnableGame};
-use crate::graphics::GraphicsResource;
+use crate::games::{GameState, Games, Game};
 
 use super::graphics::SpriteTag;
 
@@ -29,7 +28,7 @@ impl PauseScreen {
         Self::new(game, true)
     }
 }
-impl RunnableGame for PauseScreen {
+impl<'a, 'b> Game<'a, 'b> for PauseScreen {
     fn advance(&mut self, _: i32, buttons: &ButtonController) -> GameState {
         self.paused = match buttons.is_just_pressed(Button::START) {
             true => !self.paused,

@@ -1,4 +1,4 @@
-use super::Games;
+use super::games::Games;
 
 #[derive(Debug)]
 pub enum GameState {

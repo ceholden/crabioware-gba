@@ -5,10 +5,12 @@
 #![cfg_attr(test, test_runner(agb::test_runner::test_runner))]
 extern crate alloc;
 
-mod game_picker; // TODO
-pub mod graphics;
+
+// TODO
+// mod game_picker;
+// pub mod graphics;
 mod metagame;
-mod resources;
+// mod resources;
 
 pub use metagame::{MetaGame, MetaGameState, MetaGameType};
 

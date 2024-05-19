@@ -1,20 +1,9 @@
-use agb::display::object::{OamUnmanaged, SpriteLoader};
 use agb::display::tiled::{
-    AffineMap, MapLoan, RegularBackgroundSize, RegularMap, TileFormat, Tiled0, Tiled1, TiledMap,
+    AffineMap, MapLoan, RegularMap, Tiled0, Tiled1, TiledMap,
     VRamManager,
 };
-use agb::{println, Gba};
+use agb::Gba;
 
-pub trait Graphics<'g> {
-    fn new(gba: &'g mut Gba) -> Self;
-}
-
-// Specification for how to create a background layer
-// pub struct BackgroundSpec {
-//     priority: Priority,
-//     size: RegularBackgroundSize,
-//     colours: TileFormat,
-// }
 
 pub enum TiledModeResource<'g> {
     Mode0(Tiled0<'g>),

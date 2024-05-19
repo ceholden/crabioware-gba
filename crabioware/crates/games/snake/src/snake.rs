@@ -1,5 +1,5 @@
 use agb::{
-    display::object::{OamIterator, ObjectUnmanaged, SpriteLoader},
+    display::{object::{OamIterator, ObjectUnmanaged, SpriteLoader}, tiled::VRamManager},
     input::{ButtonController, Tri},
     rng::RandomNumberGenerator,
 };
@@ -8,8 +8,8 @@ use alloc::vec::Vec;
 
 use crabioware_core::{
     ecs::{EntityId, World},
-    games::{GameDifficulty, GameState, Games, RunnableGame},
-    graphics::GraphicsResource,
+    games::{GameDifficulty, GameState, Games, Game},
+    graphics::{Mode0TileMap, TileMode, TileMapResource, TileModeResource},
 };
 
 use super::components::{DirectionComponent, SpriteComponent, TileComponent};
@@ -84,7 +84,7 @@ impl GameStateResource {
     }
 }
 
-pub struct SnakeGame {
+pub struct SnakeGame<'a> {
     world: World,
     rng: RandomNumberGenerator,
     // Store head direction and commit upon movement
@@ -93,8 +93,10 @@ pub struct SnakeGame {
     body: Vec<EntityId>,
     berries: Vec<EntityId>,
     game_state: GameStateResource,
+    // background tilemap
+    tiles: Option<Mode0TileMap<'a>>,
 }
-impl SnakeGame {
+impl<'a> SnakeGame<'a> {
     pub fn new(
         difficulty: &GameDifficulty,
         loader: &mut SpriteLoader,
@@ -135,6 +137,7 @@ impl SnakeGame {
             body,
             berries,
             game_state: GameStateResource::new(difficulty),
+            tiles: None,
         }
     }
 
@@ -278,7 +281,30 @@ impl SnakeGame {
         }
     }
 }
-impl RunnableGame for SnakeGame {
+impl<'a, 'b> Game<'a, 'b> for SnakeGame<'a> {
+
+    fn renderer(&self) -> TileMode {
+        TileMode::Mode0
+    }
+
+    fn clear(&mut self, vram: &mut VRamManager) {
+        if let Some(tiles) = &mut self.tiles {
+            tiles.clear(vram);
+            tiles.commit(vram);
+        }
+    }
+
+    fn init_tiles(&mut self, tile_mode: &'a TileModeResource<'b>, vram: &mut VRamManager) {
+        let mode0 = match tile_mode {
+            TileModeResource::Mode0(mode0) => mode0,
+            _ => unimplemented!("WRONG MODE"),
+        };
+
+        let mut tiles = Mode0TileMap::default_32x32_4bpp(&mode0);
+        tiles.set_visible(true);
+        self.tiles = Some(tiles);
+    }
+
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
         self.game_state.time = self.game_state.time.wrapping_add_signed(time);
 
@@ -311,14 +337,12 @@ impl RunnableGame for SnakeGame {
         }
     }
 
-    // fn render(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
-    fn render<'g>(&self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
-        let gfx = match graphics {
-            GraphicsResource::NotTiled(gfx) => gfx,
-            _ => unimplemented!("WRONG MODE"),
-        };
-        let oam = &mut gfx.unmanaged.iter();
-        let loader = &mut gfx.sprite_loader;
+    fn render(
+        &mut self,
+        loader: &mut SpriteLoader,
+        oam: &mut OamIterator,
+        vram: &mut VRamManager,
+    ) -> Option<()> {
 
         self.renderer_digits(loader, oam);
 
