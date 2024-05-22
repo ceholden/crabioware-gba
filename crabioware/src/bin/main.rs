@@ -8,7 +8,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 
 use agb::println;
-use crabioware_core::games::{GameDifficulty, GameState, Games, Game};
+use crabioware_core::games::{Game, GameDifficulty, GameState, Games};
 // use crabioware_core::screens::PauseScreen;
 use crabioware_paccrab::PacCrabGame;
 
@@ -25,17 +25,25 @@ fn main(mut gba: agb::Gba) -> ! {
     // FIXME: implement difficulty selector
     let difficulty = GameDifficulty::HARD;
 
-    let mut selected_game = Games::Snake.new(
-        &difficulty,
-        &mut rng,
-    );
-    let (mut graphics, mut vram) = selected_game.renderer().create(&mut gba);
+    let mut selected_game = Games::PacCrab.new(&difficulty, &mut rng);
 
+    // Can I do...
+    // 1. renderer().create(gba) creates EVERYTHING to avoid multiple borrow of Gba
+    // 2. BUT GraphicsResource only has tile mode, rename "TileResource"
+    // 3. TileResource only creates the maps... so we only use in init_tiles
+    // 4. I think we have the rest we need to update tilemap inside of `render()`?
+    //    Big if true -> we can avoid re-borrowing `TileResource`
+    //    by dropping TileResource from render()
+
+    let (mut graphics, mut vram, mut unmanaged, mut sprite_loader) =
+        selected_game.renderer().create(&mut gba);
+
+    selected_game.init_tiles(&mut graphics, &mut vram);
     loop {
         buttons.update();
 
         selected_game.advance(1i32, &buttons);
-        selected_game.render(&mut graphics, &mut vram);
+        selected_game.render(&mut vram, &mut unmanaged, &mut sprite_loader);
         vblank.wait_for_vblank();
         // selected_game.render(&mut graphics);
     }

@@ -1,4 +1,5 @@
 use agb::display::object::OamIterator;
+use agb::display::object::OamUnmanaged;
 use agb::display::object::SpriteLoader;
 use agb::display::tiled::VRamManager;
 use agb::input::ButtonController;
@@ -20,8 +21,9 @@ pub trait Game<'g> {
 
     fn render(
         &mut self,
-        graphics: &mut GraphicsResource<'g>,
         vram: &mut VRamManager,
+        unmanaged: &mut OamUnmanaged,
+        sprite_loader: &mut SpriteLoader,
     ) -> Option<()>;
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState;
 }

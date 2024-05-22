@@ -1,7 +1,7 @@
 // Pong
 use agb::{
     display::{affine::AffineMatrix, object::{
-        AffineMatrixInstance, AffineMode, OamIterator, ObjectUnmanaged, SpriteLoader,
+        AffineMatrixInstance, AffineMode, OamIterator, OamUnmanaged, ObjectUnmanaged, SpriteLoader
     }, tiled::VRamManager, HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH},
     fixnum::num,
     input::{ButtonController, Tri},
@@ -623,7 +623,7 @@ impl<'g> Game<'g> for PongGame<'g> {
 
     fn init_tiles(&mut self, graphics: &'g GraphicsResource<'g>, vram: &mut VRamManager) {
         let mode0 = match graphics {
-            GraphicsResource::Mode0(mode0, _, _) => mode0,
+            GraphicsResource::Mode0(mode0) => mode0,
             _ => unimplemented!("WRONG MODE"),
         };
 
@@ -644,13 +644,10 @@ impl<'g> Game<'g> for PongGame<'g> {
     // TODO: split into 2 steps - create sprite objects & then render according to z-axis
     fn render(
         &mut self,
-        graphics: &mut GraphicsResource<'g>,
         vram: &mut VRamManager,
+        unmanaged: &mut OamUnmanaged,
+        sprite_loader: &mut SpriteLoader,
     ) -> Option<()> {
-        let (unmanaged, sprite_loader) = match graphics {
-            GraphicsResource::Mode0(_, unmanaged, sprite_loader) => (unmanaged, sprite_loader),
-            _ => unimplemented!("WRONG MODE"),
-        };
         let mut oam = unmanaged.iter();
 
         self.renderer_digits(sprite_loader, &mut oam, self.game_state.player_score, Side::LEFT);

@@ -1,4 +1,4 @@
-use agb::display::object::{OamIterator, ObjectUnmanaged, SpriteLoader};
+use agb::display::object::{OamIterator, OamUnmanaged, ObjectUnmanaged, SpriteLoader};
 use agb::display::tiled::{MapLoan, RegularBackgroundSize, RegularMap, TileFormat, TiledMap, VRamManager};
 use agb::display::Priority;
 use agb::input::{Button, ButtonController};
@@ -92,19 +92,21 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
 
     fn init_tiles(&mut self, graphics: &'g GraphicsResource<'g>, vram: &mut VRamManager) {
         let mode0 = match graphics {
-            GraphicsResource::Mode0(mode0, _, _) => mode0,
+            GraphicsResource::Mode0(mode0) => mode0,
             _ => unimplemented!("WRONG MODE"),
         };
 
         let mut tiles = Mode0TileMap::default_32x32_4bpp(&mode0);
-        tiles.set_visible(true);
+        tiles.bg1.set_visible(true);
+        self.render_tiles(&mut tiles.bg1, vram);
         self.tiles = Some(tiles);
     }
 
     fn render(
         &mut self,
-        graphics: &mut GraphicsResource<'g>,
         vram: &mut VRamManager,
+        unmanaged: &mut OamUnmanaged,
+        sprite_loader: &mut SpriteLoader,
     ) -> Option<()> {
         Some(())
     }

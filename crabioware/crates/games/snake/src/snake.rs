@@ -1,5 +1,5 @@
 use agb::{
-    display::{object::{OamIterator, ObjectUnmanaged, SpriteLoader}, tiled::VRamManager},
+    display::{object::{OamIterator, OamUnmanaged, ObjectUnmanaged, SpriteLoader}, tiled::VRamManager},
     input::{ButtonController, Tri},
     rng::RandomNumberGenerator,
 };
@@ -295,7 +295,7 @@ impl<'g> Game<'g> for SnakeGame<'g> {
 
     fn init_tiles(&mut self, graphics: &'g GraphicsResource<'g>, vram: &mut VRamManager) {
         let mode0 = match graphics {
-            GraphicsResource::Mode0(mode0, _, _) => mode0,
+            GraphicsResource::Mode0(mode0) => mode0,
             _ => unimplemented!("WRONG MODE"),
         };
 
@@ -338,13 +338,10 @@ impl<'g> Game<'g> for SnakeGame<'g> {
 
     fn render(
         &mut self,
-        graphics: &mut GraphicsResource<'g>,
         vram: &mut VRamManager,
+        unmanaged: &mut OamUnmanaged,
+        sprite_loader: &mut SpriteLoader,
     ) -> Option<()> {
-        let (unmanaged, sprite_loader) = match graphics {
-            GraphicsResource::Mode0(_, unmanaged, sprite_loader) => (unmanaged, sprite_loader),
-            _ => unimplemented!("WRONG MODE"),
-        };
         let mut oam = unmanaged.iter();
 
         self.renderer_digits(sprite_loader, &mut oam);
