@@ -8,15 +8,16 @@ use crabioware_snake::SnakeGame;
 
 use crabioware_core::games::{GameDifficulty, Games, Game};
 
+
 pub trait GameRunner {
-    fn new<'a>(
+    fn load_game<'a>(
         self,
         difficulty: &'a GameDifficulty,
         rng: &'a mut RandomNumberGenerator,
     ) -> Box<dyn Game<'a> + 'a>;
 }
 impl GameRunner for Games {
-    fn new<'a>(
+    fn load_game<'a>(
         self,
         difficulty: &'a GameDifficulty,
         rng: &'a mut RandomNumberGenerator,

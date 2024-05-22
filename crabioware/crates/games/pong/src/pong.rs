@@ -628,7 +628,7 @@ impl<'g> Game<'g> for PongGame<'g> {
         };
 
         let mut tiles = Mode0TileMap::default_32x32_4bpp(&mode0);
-        tiles.set_visible(true);
+        tiles.set_visible(false);
         self.tiles = Some(tiles);
     }
 

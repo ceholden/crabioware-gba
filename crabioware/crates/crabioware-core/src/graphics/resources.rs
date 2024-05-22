@@ -106,6 +106,9 @@ impl<'m> TileMapResource for Mode0TileMap<'m> {
         self.bg3.commit(vram);
         self.bg4.commit(vram);
     }
+
+    // FIXME: can we do some sort of "init blank" or "init <color pallet id>"?
+    //        (in response to seeing dirty backgrounds we haven't drawn on)
 }
 
 pub struct Mode1TileMap<'m> {
