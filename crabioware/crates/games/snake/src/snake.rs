@@ -1,5 +1,8 @@
 use agb::{
-    display::{object::{OamIterator, OamUnmanaged, ObjectUnmanaged, SpriteLoader}, tiled::VRamManager},
+    display::{
+        object::{OamIterator, OamUnmanaged, ObjectUnmanaged, SpriteLoader},
+        tiled::VRamManager,
+    },
     input::{ButtonController, Tri},
     rng::RandomNumberGenerator,
 };
@@ -8,8 +11,8 @@ use alloc::vec::Vec;
 
 use crabioware_core::{
     ecs::{EntityId, World},
-    games::{GameDifficulty, GameState, Games, Game},
-    graphics::{Mode0TileMap, TileMode, TileMapResource, GraphicsResource},
+    games::{Game, GameDifficulty, GameState, Games},
+    graphics::{GraphicsResource, Mode0TileMap, TileMapResource, TileMode},
 };
 
 use super::components::{DirectionComponent, SpriteComponent, TileComponent};
@@ -97,10 +100,7 @@ pub struct SnakeGame<'g> {
     tiles: Option<Mode0TileMap<'g>>,
 }
 impl<'g> SnakeGame<'g> {
-    pub fn new(
-        difficulty: &GameDifficulty,
-        rng: &mut RandomNumberGenerator,
-    ) -> Self {
+    pub fn new(difficulty: &GameDifficulty, rng: &mut RandomNumberGenerator) -> Self {
         let mut world = World::new();
         world.register_component::<DirectionComponent>();
         world.register_component::<TileComponent>();
@@ -281,7 +281,6 @@ impl<'g> SnakeGame<'g> {
     }
 }
 impl<'g> Game<'g> for SnakeGame<'g> {
-
     fn renderer(&self) -> TileMode {
         TileMode::Mode0
     }

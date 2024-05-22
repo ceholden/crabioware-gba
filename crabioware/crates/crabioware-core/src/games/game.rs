@@ -4,12 +4,11 @@ use agb::display::object::SpriteLoader;
 use agb::display::tiled::VRamManager;
 use agb::input::ButtonController;
 
-use crate::graphics::TileMode;
 use crate::graphics::GraphicsResource;
+use crate::graphics::TileMode;
 
-use super::games::Games;
 use super::game_state::GameState;
-
+use super::games::Games;
 
 pub trait Game<'g> {
     fn renderer(&self) -> TileMode {

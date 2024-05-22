@@ -1,15 +1,15 @@
 use agb::display::object::{OamIterator, OamUnmanaged, ObjectUnmanaged, SpriteLoader};
-use agb::display::tiled::{MapLoan, RegularBackgroundSize, RegularMap, TileFormat, TiledMap, VRamManager};
+use agb::display::tiled::{
+    MapLoan, RegularBackgroundSize, RegularMap, TileFormat, TiledMap, VRamManager,
+};
 use agb::display::Priority;
 use agb::input::{Button, ButtonController};
 use agb::mgba::DebugLevel;
 use agb::println;
 
 use agb::rng::RandomNumberGenerator;
-use crabioware_core::games::{GameDifficulty, GameState, Games, Game};
-use crabioware_core::graphics::{
-    Mode0TileMap, TileMapResource, TileMode, GraphicsResource
-};
+use crabioware_core::games::{Game, GameDifficulty, GameState, Games};
+use crabioware_core::graphics::{GraphicsResource, Mode0TileMap, TileMapResource, TileMode};
 
 use super::graphics::SpriteTag;
 use super::levels::{Level, Levels};
@@ -20,10 +20,7 @@ pub struct PacCrabGame<'g> {
     tiles: Option<Mode0TileMap<'g>>,
 }
 impl<'g> PacCrabGame<'g> {
-    pub fn new(
-        difficulty: &GameDifficulty,
-        rng: &mut RandomNumberGenerator,
-    ) -> Self {
+    pub fn new(difficulty: &GameDifficulty, rng: &mut RandomNumberGenerator) -> Self {
         Self {
             time: 0i32,
             level: Levels::LEVEL_1.get_level(),
@@ -52,25 +49,24 @@ impl<'g> PacCrabGame<'g> {
         bg1.set_visible(true);
     }
 
-//    fn render_map<'g>(
-//        &self,
-//        graphics: &mut GraphicsResource<'g>,
-//        tilemap: &mut TileMap<'g>,
-//    ) -> Option<()> {
-//        let gfx = match graphics {
-//            GraphicsResource::Mode0(gfx) => gfx,
-//            _ => unimplemented!("WRONG MODE"),
-//        };
-//        let mut mode0 = match tilemap {
-//            TileMap::Mode0(tilemap_) => tilemap_,
-//            _ => unimplemented!("WRONG MODE"),
-//        };
-//        if mode0.dirty {
-//            self.render_level(gfx, &mut mode0);
-//        };
-//        Some(())
-//    }
-
+    //    fn render_map<'g>(
+    //        &self,
+    //        graphics: &mut GraphicsResource<'g>,
+    //        tilemap: &mut TileMap<'g>,
+    //    ) -> Option<()> {
+    //        let gfx = match graphics {
+    //            GraphicsResource::Mode0(gfx) => gfx,
+    //            _ => unimplemented!("WRONG MODE"),
+    //        };
+    //        let mut mode0 = match tilemap {
+    //            TileMap::Mode0(tilemap_) => tilemap_,
+    //            _ => unimplemented!("WRONG MODE"),
+    //        };
+    //        if mode0.dirty {
+    //            self.render_level(gfx, &mut mode0);
+    //        };
+    //        Some(())
+    //    }
 }
 impl<'g> Game<'g> for PacCrabGame<'g> {
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {

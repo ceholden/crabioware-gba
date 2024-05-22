@@ -1,8 +1,14 @@
 // Pong
 use agb::{
-    display::{affine::AffineMatrix, object::{
-        AffineMatrixInstance, AffineMode, OamIterator, OamUnmanaged, ObjectUnmanaged, SpriteLoader
-    }, tiled::VRamManager, HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH},
+    display::{
+        affine::AffineMatrix,
+        object::{
+            AffineMatrixInstance, AffineMode, OamIterator, OamUnmanaged, ObjectUnmanaged,
+            SpriteLoader,
+        },
+        tiled::VRamManager,
+        HEIGHT as GBA_HEIGHT, WIDTH as GBA_WIDTH,
+    },
     fixnum::num,
     input::{ButtonController, Tri},
     rng::RandomNumberGenerator,
@@ -10,6 +16,7 @@ use agb::{
 use alloc::vec;
 use alloc::vec::Vec;
 
+use crabioware_core::games::{Game, GameDifficulty};
 use crabioware_core::graphics::{GraphicsResource, Mode1TileMap, TileMapResource, TileMode};
 use crabioware_core::physics::Intersects;
 use crabioware_core::types::VecMath;
@@ -18,7 +25,6 @@ use crabioware_core::{
     ecs::{EntityId, World},
     games::{GameState, Games},
 };
-use crabioware_core::games::{GameDifficulty, Game};
 
 use crate::components::{
     CollisionComponent, LocationComponent, MaxSpeed, SpriteComponent, VelocityComponent,
@@ -236,10 +242,7 @@ pub struct PongGame<'g> {
     tiles: Option<Mode1TileMap<'g>>,
 }
 impl<'g> PongGame<'g> {
-    pub fn new(
-        difficulty: &GameDifficulty,
-        rng: &mut RandomNumberGenerator,
-    ) -> Self {
+    pub fn new(difficulty: &GameDifficulty, rng: &mut RandomNumberGenerator) -> Self {
         let mut game_rng = RandomNumberGenerator::new_with_seed([
             rng.gen().abs() as u32,
             rng.gen().abs() as u32,
@@ -609,7 +612,6 @@ impl<'g> PongGame<'g> {
 }
 
 impl<'g> Game<'g> for PongGame<'g> {
-
     fn renderer(&self) -> TileMode {
         TileMode::Mode1
     }
@@ -650,8 +652,18 @@ impl<'g> Game<'g> for PongGame<'g> {
     ) -> Option<()> {
         let mut oam = unmanaged.iter();
 
-        self.renderer_digits(sprite_loader, &mut oam, self.game_state.player_score, Side::LEFT);
-        self.renderer_digits(sprite_loader, &mut oam, self.game_state.opponent_score, Side::RIGHT);
+        self.renderer_digits(
+            sprite_loader,
+            &mut oam,
+            self.game_state.player_score,
+            Side::LEFT,
+        );
+        self.renderer_digits(
+            sprite_loader,
+            &mut oam,
+            self.game_state.opponent_score,
+            Side::RIGHT,
+        );
 
         for (location, sprite) in self
             .world

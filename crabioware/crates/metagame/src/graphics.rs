@@ -43,11 +43,9 @@ pub trait Game<'a, 'b> {
     fn init_tiles(&mut self, tiled: &'a TiledModeResource<'b>, vram: &mut VRamManager) {
         // Default impl has no background tiles (e.g., pong, snake)
     }
-    fn render(
-        &mut self,
-        tiled: &'a TiledModeResource<'b>,
-        vram: &mut VRamManager,
-    ) -> Option<()> { Some(()) }
+    fn render(&mut self, tiled: &'a TiledModeResource<'b>, vram: &mut VRamManager) -> Option<()> {
+        Some(())
+    }
     fn clear(&mut self, vram: &mut VRamManager) {}
 }
 
@@ -125,11 +123,7 @@ impl<'a, 'b> Game<'a, 'b> for Mode1Game<'a> {
         }
     }
 
-    fn render(
-        &mut self,
-        tiled: &'a TiledModeResource<'b>,
-        vram: &mut VRamManager,
-    ) -> Option<()> {
+    fn render(&mut self, tiled: &'a TiledModeResource<'b>, vram: &mut VRamManager) -> Option<()> {
         match self.tiles {
             Some(ref mut tiles) => {
                 let rot = self.rotation.rem_euclid(1.into());

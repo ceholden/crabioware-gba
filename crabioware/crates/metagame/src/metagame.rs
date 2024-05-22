@@ -21,7 +21,6 @@ pub trait MetaGame {
     fn load(&self, game: &Games) -> Box<dyn Game + '_>;
 }
 
-
 pub enum MetaGameType {
     PICKER,
 }

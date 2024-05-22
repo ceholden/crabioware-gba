@@ -1,10 +1,10 @@
 use agb::display::object::{OamUnmanaged, SpriteLoader};
 use agb::display::tiled::{
-    AffineBackgroundSize, AffineMap, MapLoan, RegularBackgroundSize, RegularMap, TileFormat, Tiled0, Tiled1, TiledMap, VRamManager
+    AffineBackgroundSize, AffineMap, MapLoan, RegularBackgroundSize, RegularMap, TileFormat,
+    Tiled0, Tiled1, TiledMap, VRamManager,
 };
 use agb::display::Priority;
 use agb::Gba;
-
 
 pub enum GraphicsResource<'g> {
     Mode0(Tiled0<'g>),
@@ -17,16 +17,34 @@ pub enum TileMode {
     Mode1,
 }
 impl TileMode {
-    pub fn create<'g>(&self, gba: &'g mut Gba) -> (GraphicsResource<'g>, VRamManager, OamUnmanaged<'g>, SpriteLoader) {
+    pub fn create<'g>(
+        &self,
+        gba: &'g mut Gba,
+    ) -> (
+        GraphicsResource<'g>,
+        VRamManager,
+        OamUnmanaged<'g>,
+        SpriteLoader,
+    ) {
         let (unmanaged, sprite_loader) = gba.display.object.get_unmanaged();
         match self {
             TileMode::Mode0 => {
                 let (tiled0, vram) = gba.display.video.tiled0();
-                (GraphicsResource::Mode0(tiled0), vram, unmanaged, sprite_loader)
+                (
+                    GraphicsResource::Mode0(tiled0),
+                    vram,
+                    unmanaged,
+                    sprite_loader,
+                )
             }
             TileMode::Mode1 => {
                 let (tiled1, vram) = gba.display.video.tiled1();
-                (GraphicsResource::Mode1(tiled1), vram, unmanaged, sprite_loader)
+                (
+                    GraphicsResource::Mode1(tiled1),
+                    vram,
+                    unmanaged,
+                    sprite_loader,
+                )
             }
         }
     }
@@ -36,6 +54,8 @@ pub trait TileMapResource {
     fn clear(&mut self, vram: &mut VRamManager);
     fn set_visible(&mut self, is_visible: bool);
     fn commit(&mut self, vram: &mut VRamManager);
+    // FIXME: the `screens` should be able to interact with a `impl TileMapResource` to
+    //        temporarily hide/modify the backgrounds, then turn them back on
 }
 
 pub struct Mode0TileMap<'m> {
@@ -142,14 +162,10 @@ impl<'m> Mode1TileMap<'m> {
             RegularBackgroundSize::Background32x32,
             TileFormat::FourBpp,
         );
-        let affine = mode1.affine(
-            Priority::P3,
-            AffineBackgroundSize::Background32x32,
-        );
+        let affine = mode1.affine(Priority::P3, AffineBackgroundSize::Background32x32);
 
         Self::new(bg1, bg2, affine)
     }
-
 }
 impl<'m> TileMapResource for Mode1TileMap<'m> {
     fn clear(&mut self, vram: &mut VRamManager) {

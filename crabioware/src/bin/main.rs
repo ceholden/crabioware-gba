@@ -21,8 +21,7 @@ fn run_game(
 ) {
     let mut game = selected_game.load_game(&difficulty, rng);
 
-    let (mut graphics, mut vram, mut unmanaged, mut sprite_loader) =
-        game.renderer().create(gba);
+    let (mut graphics, mut vram, mut unmanaged, mut sprite_loader) = game.renderer().create(gba);
 
     game.init_tiles(&mut graphics, &mut vram);
     let mut timer = 0;
@@ -37,10 +36,9 @@ fn run_game(
         if timer > 100 {
             game.clear(&mut vram);
             drop(game);
-            return
+            return;
         }
     }
-
 }
 
 #[agb::entry]

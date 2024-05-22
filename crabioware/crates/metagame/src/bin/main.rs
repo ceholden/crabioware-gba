@@ -13,7 +13,10 @@ use agb::{
     println,
 };
 
-use crabioware_metagame::{graphics::{GamePicker, Games}, MetaGame};
+use crabioware_metagame::{
+    graphics::{GamePicker, Games},
+    MetaGame,
+};
 use crabioware_metagame::{MetaGameState, MetaGameType};
 
 #[agb::entry]
