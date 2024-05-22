@@ -225,7 +225,7 @@ impl Paddle {
 
 // TODO: add a "render cache" that helps us disconnect object setup and render
 //       e.g., so we can sort on z-axis or priority
-pub struct PongGame<'a> {
+pub struct PongGame<'g> {
     world: World,
     game_rng: RandomNumberGenerator,
     player: EntityId,
@@ -233,9 +233,9 @@ pub struct PongGame<'a> {
     balls: Vec<EntityId>,
     opponent_state: OpponentResource,
     game_state: GameStateResource,
-    tiles: Option<Mode0TileMap<'a>>,
+    tiles: Option<Mode0TileMap<'g>>,
 }
-impl<'a> PongGame<'a> {
+impl<'g> PongGame<'g> {
     pub fn new(
         difficulty: &GameDifficulty,
         rng: &mut RandomNumberGenerator,
@@ -608,7 +608,7 @@ impl<'a> PongGame<'a> {
     }
 }
 
-impl<'a, 'b> Game<'a, 'b> for PongGame<'a> {
+impl<'g> Game<'g> for PongGame<'g> {
 
     fn renderer(&self) -> TileMode {
         TileMode::Mode0
@@ -621,9 +621,9 @@ impl<'a, 'b> Game<'a, 'b> for PongGame<'a> {
         }
     }
 
-    fn init_tiles(&mut self, graphics: &'a GraphicsResource<'b>, vram: &mut VRamManager) {
+    fn init_tiles(&mut self, graphics: &'g GraphicsResource<'g>, vram: &mut VRamManager) {
         let mode0 = match graphics {
-            GraphicsResource::Mode0(mode0, _) => mode0,
+            GraphicsResource::Mode0(mode0, _, _) => mode0,
             _ => unimplemented!("WRONG MODE"),
         };
 
@@ -644,12 +644,11 @@ impl<'a, 'b> Game<'a, 'b> for PongGame<'a> {
     // TODO: split into 2 steps - create sprite objects & then render according to z-axis
     fn render(
         &mut self,
-        graphics: &'b mut GraphicsResource<'a>, 
-        sprite_loader: &mut SpriteLoader,
+        graphics: &mut GraphicsResource<'g>,
         vram: &mut VRamManager,
     ) -> Option<()> {
-        let unmanaged = match graphics {
-            GraphicsResource::Mode0(_, unmanaged) => unmanaged,
+        let (unmanaged, sprite_loader) = match graphics {
+            GraphicsResource::Mode0(_, unmanaged, sprite_loader) => (unmanaged, sprite_loader),
             _ => unimplemented!("WRONG MODE"),
         };
         let mut oam = unmanaged.iter();

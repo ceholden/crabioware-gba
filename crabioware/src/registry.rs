@@ -13,14 +13,14 @@ pub trait GameRunner {
         self,
         difficulty: &'a GameDifficulty,
         rng: &'a mut RandomNumberGenerator,
-    ) -> Box<dyn Game<'a, 'a> + 'a>;
+    ) -> Box<dyn Game<'a> + 'a>;
 }
 impl GameRunner for Games {
     fn new<'a>(
         self,
         difficulty: &'a GameDifficulty,
         rng: &'a mut RandomNumberGenerator,
-    ) -> Box<dyn Game<'a, 'a> + 'a> {
+    ) -> Box<dyn Game<'a> + 'a> {
         match self {
             Self::Pong => Box::new(PongGame::new(&difficulty, rng)),
             Self::Snake => Box::new(SnakeGame::new(&difficulty, rng)),

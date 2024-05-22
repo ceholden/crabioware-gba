@@ -14,12 +14,12 @@ use crabioware_core::graphics::{
 use super::graphics::SpriteTag;
 use super::levels::{Level, Levels};
 
-pub struct PacCrabGame<'a> {
+pub struct PacCrabGame<'g> {
     time: i32,
     level: Level,
-    tiles: Option<Mode0TileMap<'a>>,
+    tiles: Option<Mode0TileMap<'g>>,
 }
-impl<'a> PacCrabGame<'a> {
+impl<'g> PacCrabGame<'g> {
     pub fn new(
         difficulty: &GameDifficulty,
         rng: &mut RandomNumberGenerator,
@@ -31,7 +31,7 @@ impl<'a> PacCrabGame<'a> {
         }
     }
 
-    fn render_tiles(&self, bg1: &mut MapLoan<'a, RegularMap>, vram: &mut VRamManager) {
+    fn render_tiles(&self, bg1: &mut MapLoan<'g, RegularMap>, vram: &mut VRamManager) {
         self.level.set_background_paelttes(vram);
 
         let tileset = self.level.get_tileset();
@@ -72,7 +72,7 @@ impl<'a> PacCrabGame<'a> {
 //    }
 
 }
-impl<'a, 'b> Game<'a, 'b> for PacCrabGame<'a> {
+impl<'g> Game<'g> for PacCrabGame<'g> {
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
         self.time += time;
         println!("RUNNING PACCRAB");
@@ -90,9 +90,9 @@ impl<'a, 'b> Game<'a, 'b> for PacCrabGame<'a> {
         }
     }
 
-    fn init_tiles(&mut self, graphics: &'a GraphicsResource<'b>, vram: &mut VRamManager) {
+    fn init_tiles(&mut self, graphics: &'g GraphicsResource<'g>, vram: &mut VRamManager) {
         let mode0 = match graphics {
-            GraphicsResource::Mode0(mode0, _) => mode0,
+            GraphicsResource::Mode0(mode0, _, _) => mode0,
             _ => unimplemented!("WRONG MODE"),
         };
 
@@ -103,8 +103,7 @@ impl<'a, 'b> Game<'a, 'b> for PacCrabGame<'a> {
 
     fn render(
         &mut self,
-        graphics: &'b mut GraphicsResource<'a>, 
-        sprite_loader: &mut SpriteLoader,
+        graphics: &mut GraphicsResource<'g>,
         vram: &mut VRamManager,
     ) -> Option<()> {
         Some(())

@@ -84,7 +84,7 @@ impl GameStateResource {
     }
 }
 
-pub struct SnakeGame<'a> {
+pub struct SnakeGame<'g> {
     world: World,
     rng: RandomNumberGenerator,
     // Store head direction and commit upon movement
@@ -94,9 +94,9 @@ pub struct SnakeGame<'a> {
     berries: Vec<EntityId>,
     game_state: GameStateResource,
     // background tilemap
-    tiles: Option<Mode0TileMap<'a>>,
+    tiles: Option<Mode0TileMap<'g>>,
 }
-impl<'a> SnakeGame<'a> {
+impl<'g> SnakeGame<'g> {
     pub fn new(
         difficulty: &GameDifficulty,
         rng: &mut RandomNumberGenerator,
@@ -280,7 +280,7 @@ impl<'a> SnakeGame<'a> {
         }
     }
 }
-impl<'a, 'b> Game<'a, 'b> for SnakeGame<'a> {
+impl<'g> Game<'g> for SnakeGame<'g> {
 
     fn renderer(&self) -> TileMode {
         TileMode::Mode0
@@ -293,9 +293,9 @@ impl<'a, 'b> Game<'a, 'b> for SnakeGame<'a> {
         }
     }
 
-    fn init_tiles(&mut self, graphics: &'a GraphicsResource<'b>, vram: &mut VRamManager) {
+    fn init_tiles(&mut self, graphics: &'g GraphicsResource<'g>, vram: &mut VRamManager) {
         let mode0 = match graphics {
-            GraphicsResource::Mode0(mode0, _) => mode0,
+            GraphicsResource::Mode0(mode0, _, _) => mode0,
             _ => unimplemented!("WRONG MODE"),
         };
 
@@ -338,12 +338,11 @@ impl<'a, 'b> Game<'a, 'b> for SnakeGame<'a> {
 
     fn render(
         &mut self,
-        graphics: &'b mut GraphicsResource<'a>, 
-        sprite_loader: &mut SpriteLoader,
+        graphics: &mut GraphicsResource<'g>,
         vram: &mut VRamManager,
     ) -> Option<()> {
-        let unmanaged = match graphics {
-            GraphicsResource::Mode0(_, unmanaged) => unmanaged,
+        let (unmanaged, sprite_loader) = match graphics {
+            GraphicsResource::Mode0(_, unmanaged, sprite_loader) => (unmanaged, sprite_loader),
             _ => unimplemented!("WRONG MODE"),
         };
         let mut oam = unmanaged.iter();

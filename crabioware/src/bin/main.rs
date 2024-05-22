@@ -25,17 +25,18 @@ fn main(mut gba: agb::Gba) -> ! {
     // FIXME: implement difficulty selector
     let difficulty = GameDifficulty::HARD;
 
-    let mut selected_game = Games::PacCrab.new(
+    let mut selected_game = Games::Snake.new(
         &difficulty,
         &mut rng,
     );
-    let (mut graphics, mut vram, mut sprite_loader) = selected_game.renderer().create(&mut gba);
+    let (mut graphics, mut vram) = selected_game.renderer().create(&mut gba);
 
     loop {
         buttons.update();
 
         selected_game.advance(1i32, &buttons);
-        selected_game.render(&mut graphics, &mut sprite_loader, &mut vram);
+        selected_game.render(&mut graphics, &mut vram);
+        vblank.wait_for_vblank();
         // selected_game.render(&mut graphics);
     }
 

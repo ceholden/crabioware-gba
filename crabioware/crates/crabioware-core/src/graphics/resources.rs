@@ -7,8 +7,8 @@ use agb::Gba;
 
 
 pub enum GraphicsResource<'g> {
-    Mode0(Tiled0<'g>, OamUnmanaged<'g>),
-    Mode1(Tiled1<'g>, OamUnmanaged<'g>),
+    Mode0(Tiled0<'g>, OamUnmanaged<'g>, SpriteLoader),
+    Mode1(Tiled1<'g>, OamUnmanaged<'g>, SpriteLoader),
 }
 
 #[derive(Debug)]
@@ -17,16 +17,16 @@ pub enum TileMode {
     Mode1,
 }
 impl TileMode {
-    pub fn create<'g>(&self, gba: &'g mut Gba) -> (GraphicsResource<'g>, VRamManager, SpriteLoader) {
+    pub fn create<'g>(&self, gba: &'g mut Gba) -> (GraphicsResource<'g>, VRamManager) {
         let (unmanaged, sprite_loader) = gba.display.object.get_unmanaged();
         match self {
             TileMode::Mode0 => {
                 let (tiled0, vram) = gba.display.video.tiled0();
-                (GraphicsResource::Mode0(tiled0, unmanaged), vram, sprite_loader)
+                (GraphicsResource::Mode0(tiled0, unmanaged, sprite_loader), vram)
             }
             TileMode::Mode1 => {
                 let (tiled1, vram) = gba.display.video.tiled1();
-                (GraphicsResource::Mode1(tiled1, unmanaged), vram, sprite_loader)
+                (GraphicsResource::Mode1(tiled1, unmanaged, sprite_loader), vram)
             }
         }
     }

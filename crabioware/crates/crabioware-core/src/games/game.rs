@@ -10,18 +10,17 @@ use super::games::Games;
 use super::game_state::GameState;
 
 
-pub trait Game<'a, 'b> {
+pub trait Game<'g> {
     fn renderer(&self) -> TileMode {
         TileMode::Mode0
     }
     fn clear(&mut self, vram: &mut VRamManager) {}
     // Default impl has no background tiles (e.g., pong, snake)
-    fn init_tiles(&mut self, graphics: &'a GraphicsResource<'b>, vram: &mut VRamManager) {}
+    fn init_tiles(&mut self, graphics: &'g GraphicsResource<'g>, vram: &mut VRamManager) {}
 
     fn render(
         &mut self,
-        graphics: &'b mut GraphicsResource<'a>, 
-        sprite_loader: &mut SpriteLoader,
+        graphics: &mut GraphicsResource<'g>,
         vram: &mut VRamManager,
     ) -> Option<()>;
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState;
