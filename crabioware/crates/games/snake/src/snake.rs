@@ -9,7 +9,7 @@ use alloc::vec::Vec;
 use crabioware_core::{
     ecs::{EntityId, World},
     games::{GameDifficulty, GameState, Games, Game},
-    graphics::{Mode0TileMap, TileMode, TileMapResource, TileModeResource},
+    graphics::{Mode0TileMap, TileMode, TileMapResource, GraphicsResource},
 };
 
 use super::components::{DirectionComponent, SpriteComponent, TileComponent};
@@ -99,7 +99,6 @@ pub struct SnakeGame<'a> {
 impl<'a> SnakeGame<'a> {
     pub fn new(
         difficulty: &GameDifficulty,
-        loader: &mut SpriteLoader,
         rng: &mut RandomNumberGenerator,
     ) -> Self {
         let mut world = World::new();
@@ -294,9 +293,9 @@ impl<'a, 'b> Game<'a, 'b> for SnakeGame<'a> {
         }
     }
 
-    fn init_tiles(&mut self, tile_mode: &'a TileModeResource<'b>, vram: &mut VRamManager) {
-        let mode0 = match tile_mode {
-            TileModeResource::Mode0(mode0) => mode0,
+    fn init_tiles(&mut self, graphics: &'a GraphicsResource<'b>, vram: &mut VRamManager) {
+        let mode0 = match graphics {
+            GraphicsResource::Mode0(mode0, _) => mode0,
             _ => unimplemented!("WRONG MODE"),
         };
 
@@ -339,12 +338,17 @@ impl<'a, 'b> Game<'a, 'b> for SnakeGame<'a> {
 
     fn render(
         &mut self,
-        loader: &mut SpriteLoader,
-        oam: &mut OamIterator,
+        graphics: &'b mut GraphicsResource<'a>, 
+        sprite_loader: &mut SpriteLoader,
         vram: &mut VRamManager,
     ) -> Option<()> {
+        let unmanaged = match graphics {
+            GraphicsResource::Mode0(_, unmanaged) => unmanaged,
+            _ => unimplemented!("WRONG MODE"),
+        };
+        let mut oam = unmanaged.iter();
 
-        self.renderer_digits(loader, oam);
+        self.renderer_digits(sprite_loader, &mut oam);
 
         let iter = self
             .world
@@ -352,7 +356,7 @@ impl<'a, 'b> Game<'a, 'b> for SnakeGame<'a> {
 
         for (tile, sprite) in iter {
             let sprite_tag = sprite.tag.tag().sprite(sprite.frame.into());
-            let mut object = ObjectUnmanaged::new(loader.get_vram_sprite(sprite_tag));
+            let mut object = ObjectUnmanaged::new(sprite_loader.get_vram_sprite(sprite_tag));
 
             object
                 .set_x(tile.position_x())

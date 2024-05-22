@@ -1,3 +1,4 @@
+use agb::display::object::{OamUnmanaged, SpriteLoader};
 use agb::display::tiled::{
     AffineMap, MapLoan, RegularMap, Tiled0, Tiled1, TiledMap,
     VRamManager,
@@ -6,8 +7,8 @@ use agb::Gba;
 
 
 pub enum TiledModeResource<'g> {
-    Mode0(Tiled0<'g>),
-    Mode1(Tiled1<'g>),
+    Mode0(Tiled0<'g>, OamUnmanaged<'g>, SpriteLoader),
+    Mode1(Tiled1<'g>, OamUnmanaged<'g>, SpriteLoader),
 }
 
 #[derive(Debug)]
@@ -17,14 +18,15 @@ pub enum TiledMode {
 }
 impl TiledMode {
     pub fn create<'g>(&self, gba: &'g mut Gba) -> (TiledModeResource<'g>, VRamManager) {
+        let (unmanaged, sprite_loader) = gba.display.object.get_unmanaged();
         match self {
             TiledMode::Mode0 => {
                 let (tiled0, vram) = gba.display.video.tiled0();
-                (TiledModeResource::Mode0(tiled0), vram)
+                (TiledModeResource::Mode0(tiled0, unmanaged, sprite_loader), vram)
             }
             TiledMode::Mode1 => {
                 let (tiled1, vram) = gba.display.video.tiled1();
-                (TiledModeResource::Mode1(tiled1), vram)
+                (TiledModeResource::Mode1(tiled1, unmanaged, sprite_loader), vram)
             }
         }
     }

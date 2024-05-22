@@ -1,7 +1,7 @@
 use agb::{
     display::{
         affine::AffineMatrixBackground,
-        object::{OamUnmanaged, SpriteLoader},
+        object::{OamIterator, OamUnmanaged, SpriteLoader},
         palette16::Palette16,
         tiled::{
             AffineBackgroundSize, MapLoan, RegularBackgroundSize, RegularMap, TileFormat, Tiled0,
@@ -43,7 +43,11 @@ pub trait Game<'a, 'b> {
     fn init_tiles(&mut self, tiled: &'a TiledModeResource<'b>, vram: &mut VRamManager) {
         // Default impl has no background tiles (e.g., pong, snake)
     }
-    fn render(&mut self, vram: &mut VRamManager);
+    fn render(
+        &mut self,
+        tiled: &'a TiledModeResource<'b>,
+        vram: &mut VRamManager,
+    ) -> Option<()> { Some(()) }
     fn clear(&mut self, vram: &mut VRamManager) {}
 }
 
@@ -80,7 +84,7 @@ impl<'a, 'b> Game<'a, 'b> for Mode1Game<'a> {
 
     fn init_tiles(&mut self, tiled: &'a TiledModeResource<'b>, vram: &mut VRamManager) {
         let mode1 = match tiled {
-            TiledModeResource::Mode1(gfx) => gfx,
+            TiledModeResource::Mode1(gfx, _, _) => gfx,
             _ => unimplemented!("WRONG MODE"),
         };
 
@@ -121,7 +125,11 @@ impl<'a, 'b> Game<'a, 'b> for Mode1Game<'a> {
         }
     }
 
-    fn render(&mut self, vram: &mut VRamManager) {
+    fn render(
+        &mut self,
+        tiled: &'a TiledModeResource<'b>,
+        vram: &mut VRamManager,
+    ) -> Option<()> {
         match self.tiles {
             Some(ref mut tiles) => {
                 let rot = self.rotation.rem_euclid(1.into());
@@ -137,6 +145,7 @@ impl<'a, 'b> Game<'a, 'b> for Mode1Game<'a> {
             }
             _ => {}
         }
+        Some(())
     }
 }
 
@@ -197,8 +206,6 @@ impl<'a, 'b> Game<'a, 'b> for Mode0Game<'a> {
         TiledMode::Mode0
     }
 
-    fn render(&mut self, vram: &mut VRamManager) {}
-
     fn clear(&mut self, vram: &mut VRamManager) {
         if let Some(tiles) = &mut self.tiles {
             tiles.clear(vram);
@@ -209,7 +216,7 @@ impl<'a, 'b> Game<'a, 'b> for Mode0Game<'a> {
     fn init_tiles(&mut self, tiled: &'a TiledModeResource<'b>, vram: &mut VRamManager) {
         println!("INIT TILES FOR MODE0");
         let mode0 = match tiled {
-            TiledModeResource::Mode0(gfx) => gfx,
+            TiledModeResource::Mode0(gfx, _, _) => gfx,
             _ => unimplemented!("WRONG MODE"),
         };
         let mut bg1 = mode0.background(
@@ -298,7 +305,7 @@ impl GamePicker {
             match game.advance(1) {
                 GameState::RUN => {
                     // println!("RENDERING {selected_game:?}");
-                    game.render(&mut vram);
+                    game.render(&graphics, &mut vram);
                 }
                 state => {
                     match state {

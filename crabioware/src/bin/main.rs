@@ -4,13 +4,12 @@
 #![cfg_attr(test, reexport_test_harness_main = "test_main")]
 #![cfg_attr(test, test_runner(agb::test_runner::test_runner))]
 extern crate alloc;
-use core::default;
 
 use alloc::boxed::Box;
 
 use agb::println;
-use crabioware_core::games::{GameDifficulty, GameState, Games, RunnableGame};
-use crabioware_core::screens::PauseScreen;
+use crabioware_core::games::{GameDifficulty, GameState, Games, Game};
+// use crabioware_core::screens::PauseScreen;
 use crabioware_paccrab::PacCrabGame;
 
 use crabioware::GameRunner;
@@ -21,18 +20,22 @@ fn main(mut gba: agb::Gba) -> ! {
 
     let vblank = agb::interrupt::VBlank::get();
     let mut buttons = agb::input::ButtonController::new();
+    let mut rng = agb::rng::RandomNumberGenerator::new();
 
     // FIXME: implement difficulty selector
     let difficulty = GameDifficulty::HARD;
 
-    let mut selected_game = PacCrabGame::default();
-    let mut graphics = selected_game.renderer().create(&mut gba);
-    let mut tilemap = selected_game.tilemaps(&mut graphics);
+    let mut selected_game = Games::PacCrab.new(
+        &difficulty,
+        &mut rng,
+    );
+    let (mut graphics, mut vram, mut sprite_loader) = selected_game.renderer().create(&mut gba);
 
     loop {
         buttons.update();
+
         selected_game.advance(1i32, &buttons);
-        selected_game.render_map(&mut graphics, &mut tilemap);
+        selected_game.render(&mut graphics, &mut sprite_loader, &mut vram);
         // selected_game.render(&mut graphics);
     }
 

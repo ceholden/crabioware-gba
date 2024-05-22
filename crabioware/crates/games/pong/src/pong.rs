@@ -10,7 +10,7 @@ use agb::{
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crabioware_core::graphics::{Mode0TileMap, TileMode, TileMapResource, TileModeResource};
+use crabioware_core::graphics::{Mode0TileMap, TileMode, TileMapResource, GraphicsResource};
 use crabioware_core::physics::Intersects;
 use crabioware_core::types::VecMath;
 use crabioware_core::types::{Number, Rect, RectMath, Vector2D};
@@ -238,7 +238,6 @@ pub struct PongGame<'a> {
 impl<'a> PongGame<'a> {
     pub fn new(
         difficulty: &GameDifficulty,
-        _: &mut SpriteLoader,
         rng: &mut RandomNumberGenerator,
     ) -> Self {
         let mut game_rng = RandomNumberGenerator::new_with_seed([
@@ -622,9 +621,9 @@ impl<'a, 'b> Game<'a, 'b> for PongGame<'a> {
         }
     }
 
-    fn init_tiles(&mut self, tile_mode: &'a TileModeResource<'b>, vram: &mut VRamManager) {
-        let mode0 = match tile_mode {
-            TileModeResource::Mode0(mode0) => mode0,
+    fn init_tiles(&mut self, graphics: &'a GraphicsResource<'b>, vram: &mut VRamManager) {
+        let mode0 = match graphics {
+            GraphicsResource::Mode0(mode0, _) => mode0,
             _ => unimplemented!("WRONG MODE"),
         };
 
@@ -645,12 +644,18 @@ impl<'a, 'b> Game<'a, 'b> for PongGame<'a> {
     // TODO: split into 2 steps - create sprite objects & then render according to z-axis
     fn render(
         &mut self,
-        loader: &mut SpriteLoader,
-        oam: &mut OamIterator,
+        graphics: &'b mut GraphicsResource<'a>, 
+        sprite_loader: &mut SpriteLoader,
         vram: &mut VRamManager,
     ) -> Option<()> {
-        self.renderer_digits(loader, oam, self.game_state.player_score, Side::LEFT);
-        self.renderer_digits(loader, oam, self.game_state.opponent_score, Side::RIGHT);
+        let unmanaged = match graphics {
+            GraphicsResource::Mode0(_, unmanaged) => unmanaged,
+            _ => unimplemented!("WRONG MODE"),
+        };
+        let mut oam = unmanaged.iter();
+
+        self.renderer_digits(sprite_loader, &mut oam, self.game_state.player_score, Side::LEFT);
+        self.renderer_digits(sprite_loader, &mut oam, self.game_state.opponent_score, Side::RIGHT);
 
         for (location, sprite) in self
             .world
@@ -661,7 +666,7 @@ impl<'a, 'b> Game<'a, 'b> for PongGame<'a> {
             );
             let position = (location.position + sprite.offset).floor();
             let mut object = ObjectUnmanaged::new(
-                loader.get_vram_sprite(sprite.tag.tag().sprite(sprite.frame.into())),
+                sprite_loader.get_vram_sprite(sprite.tag.tag().sprite(sprite.frame.into())),
             );
             object
                 .set_position(position)

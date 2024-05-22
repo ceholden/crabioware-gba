@@ -1,35 +1,33 @@
 use agb::{display::object::SpriteLoader, rng::RandomNumberGenerator};
 use alloc::boxed::Box;
 
-use crabioware_core::screens::{GameOverScreen, StartScreen, VictoryScreen};
+// use crabioware_core::screens::{GameOverScreen, StartScreen, VictoryScreen};
 use crabioware_paccrab::PacCrabGame;
 use crabioware_pong::PongGame;
 use crabioware_snake::SnakeGame;
 
-use crabioware_core::games::{GameDifficulty, Games, RunnableGame};
+use crabioware_core::games::{GameDifficulty, Games, Game};
 
 pub trait GameRunner {
-    fn new(
-        &self,
-        difficulty: &GameDifficulty,
-        loader: &mut SpriteLoader,
-        rng: &mut RandomNumberGenerator,
-    ) -> Box<dyn RunnableGame>;
+    fn new<'a>(
+        self,
+        difficulty: &'a GameDifficulty,
+        rng: &'a mut RandomNumberGenerator,
+    ) -> Box<dyn Game<'a, 'a> + 'a>;
 }
 impl GameRunner for Games {
-    fn new(
-        &self,
-        difficulty: &GameDifficulty,
-        loader: &mut SpriteLoader,
-        rng: &mut RandomNumberGenerator,
-    ) -> Box<dyn RunnableGame> {
+    fn new<'a>(
+        self,
+        difficulty: &'a GameDifficulty,
+        rng: &'a mut RandomNumberGenerator,
+    ) -> Box<dyn Game<'a, 'a> + 'a> {
         match self {
-            Self::Pong => Box::new(PongGame::new(&difficulty, loader, rng)),
-            Self::Snake => Box::new(SnakeGame::new(&difficulty, loader, rng)),
-            Self::PacCrab => Box::new(PacCrabGame::new(&difficulty, loader, rng)),
-            Self::Start => Box::new(StartScreen::new()),
-            Self::GameOver => Box::new(GameOverScreen::new()),
-            Self::Victory => Box::new(VictoryScreen::new()),
+            Self::Pong => Box::new(PongGame::new(&difficulty, rng)),
+            Self::Snake => Box::new(SnakeGame::new(&difficulty, rng)),
+            Self::PacCrab => Box::new(PacCrabGame::new(&difficulty, rng)),
+//            Self::Start => Box::new(StartScreen::new()),
+//            Self::GameOver => Box::new(GameOverScreen::new()),
+//            Self::Victory => Box::new(VictoryScreen::new()),
         }
     }
 }

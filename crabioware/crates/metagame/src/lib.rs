@@ -7,10 +7,10 @@ extern crate alloc;
 
 
 // TODO
-// mod game_picker;
-// pub mod graphics;
+mod game_picker;
+pub mod graphics;
 mod metagame;
-// mod resources;
+mod resources;
 
 pub use metagame::{MetaGame, MetaGameState, MetaGameType};
 

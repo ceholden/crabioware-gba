@@ -8,7 +8,7 @@ use agb::println;
 use agb::rng::RandomNumberGenerator;
 use crabioware_core::games::{GameDifficulty, GameState, Games, Game};
 use crabioware_core::graphics::{
-    Mode0TileMap, TileMapResource, TileMode, TileModeResource
+    Mode0TileMap, TileMapResource, TileMode, GraphicsResource
 };
 
 use super::graphics::SpriteTag;
@@ -19,19 +19,9 @@ pub struct PacCrabGame<'a> {
     level: Level,
     tiles: Option<Mode0TileMap<'a>>,
 }
-impl<'a> Default<'a> for PacCrabGame<'a> {
-    fn default() -> Self {
-        Self {
-            time: 0i32,
-            level: Levels::LEVEL_1.get_level(),
-            tiles: None,
-        }
-    }
-}
 impl<'a> PacCrabGame<'a> {
     pub fn new(
         difficulty: &GameDifficulty,
-        _: &mut SpriteLoader,
         rng: &mut RandomNumberGenerator,
     ) -> Self {
         Self {
@@ -100,9 +90,9 @@ impl<'a, 'b> Game<'a, 'b> for PacCrabGame<'a> {
         }
     }
 
-    fn init_tiles(&mut self, tile_mode: &'a TileModeResource<'b>, vram: &mut VRamManager) {
-        let mode0 = match tile_mode {
-            TileModeResource::Mode0(mode0) => mode0,
+    fn init_tiles(&mut self, graphics: &'a GraphicsResource<'b>, vram: &mut VRamManager) {
+        let mode0 = match graphics {
+            GraphicsResource::Mode0(mode0, _) => mode0,
             _ => unimplemented!("WRONG MODE"),
         };
 
@@ -113,8 +103,8 @@ impl<'a, 'b> Game<'a, 'b> for PacCrabGame<'a> {
 
     fn render(
         &mut self,
-        loader: &mut SpriteLoader,
-        oam: &mut OamIterator,
+        graphics: &'b mut GraphicsResource<'a>, 
+        sprite_loader: &mut SpriteLoader,
         vram: &mut VRamManager,
     ) -> Option<()> {
         Some(())

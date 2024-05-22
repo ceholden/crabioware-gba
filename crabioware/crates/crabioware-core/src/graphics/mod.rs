@@ -3,7 +3,7 @@ mod resources;
 
 pub use resources::{
     TileMode,
-    TileModeResource,
+    GraphicsResource,
     TileMapResource,
     Mode0TileMap,
     Mode1TileMap,
