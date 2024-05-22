@@ -10,7 +10,7 @@ use agb::{
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crabioware_core::graphics::{Mode0TileMap, TileMode, TileMapResource, GraphicsResource};
+use crabioware_core::graphics::{GraphicsResource, Mode1TileMap, TileMapResource, TileMode};
 use crabioware_core::physics::Intersects;
 use crabioware_core::types::VecMath;
 use crabioware_core::types::{Number, Rect, RectMath, Vector2D};
@@ -233,7 +233,7 @@ pub struct PongGame<'g> {
     balls: Vec<EntityId>,
     opponent_state: OpponentResource,
     game_state: GameStateResource,
-    tiles: Option<Mode0TileMap<'g>>,
+    tiles: Option<Mode1TileMap<'g>>,
 }
 impl<'g> PongGame<'g> {
     pub fn new(
@@ -611,7 +611,7 @@ impl<'g> PongGame<'g> {
 impl<'g> Game<'g> for PongGame<'g> {
 
     fn renderer(&self) -> TileMode {
-        TileMode::Mode0
+        TileMode::Mode1
     }
 
     fn clear(&mut self, vram: &mut VRamManager) {
@@ -622,12 +622,12 @@ impl<'g> Game<'g> for PongGame<'g> {
     }
 
     fn init_tiles(&mut self, graphics: &'g GraphicsResource<'g>, vram: &mut VRamManager) {
-        let mode0 = match graphics {
-            GraphicsResource::Mode0(mode0) => mode0,
+        let mode1 = match graphics {
+            GraphicsResource::Mode1(mode1) => mode1,
             _ => unimplemented!("WRONG MODE"),
         };
 
-        let mut tiles = Mode0TileMap::default_32x32_4bpp(&mode0);
+        let mut tiles = Mode1TileMap::default_32x32_4bpp(&mode1);
         tiles.set_visible(false);
         self.tiles = Some(tiles);
     }

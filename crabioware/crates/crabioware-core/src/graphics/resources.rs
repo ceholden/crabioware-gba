@@ -1,6 +1,6 @@
 use agb::display::object::{OamUnmanaged, SpriteLoader};
 use agb::display::tiled::{
-    AffineMap, MapLoan, RegularBackgroundSize, RegularMap, TileFormat, Tiled0, Tiled1, TiledMap, VRamManager
+    AffineBackgroundSize, AffineMap, MapLoan, RegularBackgroundSize, RegularMap, TileFormat, Tiled0, Tiled1, TiledMap, VRamManager
 };
 use agb::display::Priority;
 use agb::Gba;
@@ -130,6 +130,26 @@ impl<'m> Mode1TileMap<'m> {
             dirty: false,
         }
     }
+
+    pub fn default_32x32_4bpp<'t>(mode1: &'m Tiled1<'t>) -> Self {
+        let bg1 = mode1.regular(
+            Priority::P0,
+            RegularBackgroundSize::Background32x32,
+            TileFormat::FourBpp,
+        );
+        let bg2 = mode1.regular(
+            Priority::P1,
+            RegularBackgroundSize::Background32x32,
+            TileFormat::FourBpp,
+        );
+        let affine = mode1.affine(
+            Priority::P3,
+            AffineBackgroundSize::Background32x32,
+        );
+
+        Self::new(bg1, bg2, affine)
+    }
+
 }
 impl<'m> TileMapResource for Mode1TileMap<'m> {
     fn clear(&mut self, vram: &mut VRamManager) {
