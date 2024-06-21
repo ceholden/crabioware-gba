@@ -6,7 +6,7 @@
 extern crate alloc;
 
 use agb::{input::ButtonController, interrupt::VBlank, println, rng::RandomNumberGenerator};
-use crabioware_core::games::{Game, GameDifficulty, GameState, Games};
+use crabioware_core::games::{Game, GameDifficulty, Games};
 // use crabioware_core::screens::PauseScreen;
 
 use crabioware::GameRunner;

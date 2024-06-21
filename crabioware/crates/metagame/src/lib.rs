@@ -6,12 +6,12 @@
 extern crate alloc;
 
 // TODO
-mod game_picker;
-pub mod graphics;
+mod metagames;
 mod metagame;
-mod resources;
 
 pub use metagame::{MetaGame, MetaGameState, MetaGameType};
+pub use metagames::GamePicker;
+
 
 #[cfg(test)]
 #[agb::entry]

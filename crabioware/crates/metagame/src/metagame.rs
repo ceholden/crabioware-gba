@@ -1,7 +1,9 @@
 use agb::{interrupt::VBlank, Gba};
 use alloc::boxed::Box;
+use crabioware_core::games::{Game, Games};
 
-use crate::graphics::{Game, Games};
+
+
 
 pub enum MetaGameState {
     START(MetaGameType),
@@ -11,14 +13,10 @@ pub enum MetaGameState {
 }
 
 pub trait MetaGame {
-    fn pick(&self) -> Games {
-        Games::GAME1
-    }
-    fn next(&self, current: &Games) -> Games {
-        current.next()
-    }
+    fn pick(&self) -> Games;
+    fn next(&self, current: &Games) -> Games;
     fn run(&self, gba: &mut Gba, vblank: &VBlank) -> MetaGameState;
-    fn load(&self, game: &Games) -> Box<dyn Game + '_>;
+    fn load(&self, game: &Games) -> Box<impl Game + '_>;
 }
 
 pub enum MetaGameType {
