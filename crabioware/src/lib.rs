@@ -6,7 +6,7 @@
 extern crate alloc;
 
 mod registry;
-pub use registry::GameRunner;
+pub use registry::Registry;
 
 #[cfg(test)]
 #[agb::entry]

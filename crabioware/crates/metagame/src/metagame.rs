@@ -1,9 +1,5 @@
-use agb::{interrupt::VBlank, Gba};
-use alloc::boxed::Box;
-use crabioware_core::games::{Game, Games};
-
-
-
+use agb::{input::ButtonController, interrupt::VBlank, Gba};
+use crabioware_core::games::GameLoader;
 
 pub enum MetaGameState {
     START(MetaGameType),
@@ -13,10 +9,13 @@ pub enum MetaGameState {
 }
 
 pub trait MetaGame {
-    fn pick(&self) -> Games;
-    fn next(&self, current: &Games) -> Games;
-    fn run(&self, gba: &mut Gba, vblank: &VBlank) -> MetaGameState;
-    fn load(&self, game: &Games) -> Box<impl Game + '_>;
+    fn run(
+        &self,
+        gba: &mut Gba,
+        vblank: &VBlank,
+        buttons: &mut ButtonController,
+        loader: &impl GameLoader,
+    ) -> MetaGameState;
 }
 
 pub enum MetaGameType {

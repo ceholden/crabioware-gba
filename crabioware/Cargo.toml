@@ -23,6 +23,7 @@ edition = "2021"
 [dependencies]
 agb = { workspace = true }
 crabioware-core = { path = "crates/crabioware-core" }
+crabioware-metagame = { path = "crates/metagame" }
 crabioware-pong = { path = "crates/games/pong" }
 crabioware-snake = { path = "crates/games/snake" }
 crabioware-paccrab = { path = "crates/games/paccrab" }
