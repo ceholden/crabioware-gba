@@ -1,13 +1,18 @@
-use agb::display::object::{OamIterator, ObjectUnmanaged, SpriteLoader};
+use core::borrow::Borrow;
+
+use agb::display::object::{OamIterator, OamUnmanaged, ObjectUnmanaged, SpriteLoader};
+use agb::display::tiled::VRamManager;
 use agb::input::{Button, ButtonController};
+use agb::interrupt::VBlank;
 use agb::println;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::games::{GameState, Games, RunnableGame};
-use crate::graphics::GraphicsResource;
+use crate::games::{GameState, Games, Game};
+use crate::graphics::{GraphicsResource, Mode0TileMap, TileMapResource, TileMode};
 
 use super::graphics::SpriteTag;
+
 
 struct GameEntry {
     game: Games,
@@ -35,20 +40,45 @@ impl StartScreen {
                 sprite: SpriteTag::PacCrab,
             },
         ];
+
         Self {
             time: 0i32,
             games,
             selection: 0u8,
         }
     }
-}
-impl RunnableGame for StartScreen {
-    fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
-        self.time += time;
-        if self.time < 25 {
-            return GameState::Running(Games::Start);
-        }
 
+    pub fn pick_game(
+        gba: &mut agb::Gba,
+        buttons: &mut ButtonController,
+        vblank: &VBlank,
+    ) -> Games {
+
+        let mut start_screen = Self::new();
+        let (graphics, mut vram, mut unmanaged, mut sprite_loader) = TileMode::Mode0.create(gba);
+
+        let mode0 = match graphics {
+            GraphicsResource::Mode0(mode0) => mode0,
+            _ => unimplemented!("WRONG MODE"),
+        };
+
+        let mut tiles = Mode0TileMap::default_32x32_4bpp(&mode0);
+        tiles.set_visible(false);
+
+        loop {
+            buttons.update();
+            if let Some(selected_game) = start_screen.update(buttons) {
+                return selected_game
+            };
+            start_screen.render(&mut unmanaged, &mut sprite_loader);
+            vblank.wait_for_vblank();
+        }
+    }
+
+    fn update(
+        &mut self,
+        buttons: &ButtonController,
+    ) -> Option<Games> {
         if buttons.is_just_pressed(Button::DOWN) && self.selection < (self.games.len() - 1) as u8 {
             println!("PRESSED DOWN");
             self.selection += 1;
@@ -60,19 +90,17 @@ impl RunnableGame for StartScreen {
         if buttons.is_just_pressed(Button::A) {
             let game = self.games[self.selection as usize].game;
             println!("SELECTING GAME index={}, game={:?}", self.selection, game);
-            return GameState::Start(game);
+            return Some(game)
         }
-
-        GameState::Running(Games::Start)
+        None
     }
-    // fn render(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) -> Option<()> {
-    fn render<'g>(&self, graphics: &mut GraphicsResource<'g>) -> Option<()> {
-        let gfx = match graphics {
-            GraphicsResource::NotTiled(gfx) => gfx,
-            _ => unimplemented!("WRONG MODE"),
-        };
-        let oam = &mut gfx.unmanaged.iter();
-        let loader = &mut gfx.sprite_loader;
+
+    fn render(
+        &mut self,
+        unmanaged: &mut OamUnmanaged,
+        sprite_loader: &mut SpriteLoader,
+    ) -> Option<()> {
+        let mut oam = unmanaged.iter();
 
         let x0 = 16u16;
         let dx = 16u16;
@@ -81,7 +109,7 @@ impl RunnableGame for StartScreen {
 
         for (i, game) in self.games.iter().enumerate() {
             let sprite_tag = game.sprite.tag().sprite(0);
-            let mut object = ObjectUnmanaged::new(loader.get_vram_sprite(sprite_tag));
+            let mut object = ObjectUnmanaged::new(sprite_loader.get_vram_sprite(sprite_tag));
 
             let x = match self.selection == i as u8 {
                 true => x0 - dx,

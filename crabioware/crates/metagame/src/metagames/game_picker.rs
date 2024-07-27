@@ -2,7 +2,7 @@ use agb::{input::ButtonController, interrupt::VBlank, rng::RandomNumberGenerator
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crabioware_core::games::{Game, GameDifficulty, GameLoader, Games};
+use crabioware_core::{games::{Game, GameDifficulty, GameLoader, GameState, Games}, screens::StartScreen};
 
 use crate::metagame::{MetaGame, MetaGameState};
 
@@ -30,24 +30,29 @@ impl GamePicker {
     ) {
         let mut game = loader.load_game(&selected_game, &difficulty, rng);
 
+        let mut game_state = GameState::Running(*selected_game);
+
         let (mut graphics, mut vram, mut unmanaged, mut sprite_loader) =
             game.renderer().create(gba);
-
         game.init_tiles(&mut graphics, &mut vram);
+
         let mut timer = 0;
         loop {
             buttons.update();
 
-            game.advance(1i32, &buttons);
+            game_state = game.advance(1i32, &buttons);
             game.render(&mut vram, &mut unmanaged, &mut sprite_loader);
             vblank.wait_for_vblank();
 
-            timer += 1;
-            if timer > 100 {
-                game.clear(&mut vram);
-                drop(game);
-                return;
+            match game_state {
+                GameState::GameOver => {
+                    game.clear(&mut vram);
+                    drop(game);
+                    return
+                },
+                _ => {}
             }
+            timer += 1;
         }
     }
 }
@@ -60,12 +65,13 @@ impl MetaGame for GamePicker {
         buttons: &mut ButtonController,
         loader: &impl GameLoader,
     ) -> MetaGameState {
-        let mut selected_game = Games::PacCrab;
 
         let mut rng = RandomNumberGenerator::new();
         let difficulty = GameDifficulty::HARD;
 
         loop {
+            let selected_game = StartScreen::pick_game(gba, buttons, vblank);
+
             self.run_game(
                 &selected_game,
                 &difficulty,
@@ -75,11 +81,6 @@ impl MetaGame for GamePicker {
                 &vblank,
                 loader,
             );
-            selected_game = match selected_game {
-                Games::Snake => Games::PacCrab,
-                Games::PacCrab => Games::Pong,
-                Games::Pong => Games::Snake,
-            };
         }
     }
 }

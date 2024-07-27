@@ -72,7 +72,11 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
         self.time += time;
         println!("RUNNING PACCRAB");
-        GameState::Running(Games::PacCrab)
+        if self.time < 200 {
+            GameState::Running(Games::PacCrab)
+        } else {
+            GameState::GameOver
+        }
     }
 
     fn renderer(&self) -> TileMode {
