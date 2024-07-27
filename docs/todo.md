@@ -13,6 +13,7 @@
     * [Platformer](#platformer)
     * [PacCrab](#paccrab)
     * [Space Invaders](#space-invaders)
+    * [Vampire Survivor](#vampire-survivor)
     * [Brawler](#brawler)
 
 <!-- vim-markdown-toc -->
@@ -133,6 +134,10 @@ Crab eats berries, fish chase.
 ### Space Invaders
 
 Prevent descending crab traps from reaching sea floor.
+
+### Vampire Survivor
+
+Demake
 
 ### Brawler
 
