@@ -13,6 +13,7 @@
     * [Platformer](#platformer)
     * [PacCrab](#paccrab)
     * [Space Invaders](#space-invaders)
+    * [Vampire Survivor](#vampire-survivor)
     * [Brawler](#brawler)
 
 <!-- vim-markdown-toc -->
@@ -35,10 +36,10 @@
     * Snake
 * [x] Affine sprites
     * Pong
-* [ ] Tilemap editor -> game art pipeline
-    * [Tiled](https://www.mapeditor.org/) (?)
-    * [Sprite Fusion](https://www.spritefusion.com/) (?)
-    * [LDTK](https://ldtk.io/) (?)
+* [x] Tilemap editor -> game art pipeline
+    * Aseprite tilemap mode -> create png tilesheet
+    * Use [Tiled](https://www.mapeditor.org/) to create maps. Export as JSON.
+    * "Build" script reads from exported JSON, dumping data into Rust file (a bunch of e.g., &[u16] arrays)
 * [ ] Background scrolling tilemap
 * [ ] Collision with tilemap
 * [ ] Collision detection
@@ -133,6 +134,10 @@ Crab eats berries, fish chase.
 ### Space Invaders
 
 Prevent descending crab traps from reaching sea floor.
+
+### Vampire Survivor
+
+Demake
 
 ### Brawler
 

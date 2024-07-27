@@ -5,8 +5,10 @@
 #![cfg_attr(test, test_runner(agb::test_runner::test_runner))]
 extern crate alloc;
 
-mod registry;
-pub use registry::Registry;
+mod components;
+mod graphics;
+mod pong;
+pub use pong::PongGame;
 
 #[cfg(test)]
 #[agb::entry]

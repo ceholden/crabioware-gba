@@ -5,8 +5,12 @@
 #![cfg_attr(test, test_runner(agb::test_runner::test_runner))]
 extern crate alloc;
 
-mod registry;
-pub use registry::Registry;
+// TODO
+mod metagame;
+mod metagames;
+
+pub use metagame::{MetaGame, MetaGameState, MetaGameType};
+pub use metagames::GamePicker;
 
 #[cfg(test)]
 #[agb::entry]

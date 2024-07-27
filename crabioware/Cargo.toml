@@ -1,3 +1,19 @@
+[workspace]
+members = [
+    "crates/crabioware-core",
+    "crates/metagame",
+    "crates/games/*",
+]
+
+[workspace.dependencies]
+agb = "^0.19.1"
+itertools = { version = "0.12.1", default-features = false }
+
+[workspace.package]
+version = "0.1.0"
+authors = [""]
+edition = "2021"
+
 [package]
 name = "crabioware"
 version = "0.1.0"
@@ -5,11 +21,12 @@ authors = [""]
 edition = "2021"
 
 [dependencies]
-agb = "^0.18.0"
-anymap = { version = "1.0.0-beta.2", default-features = false, features = ["hashbrown"] }
-hashbrown = "0.14.3"
-itertools = { version = "0.12.1", default-features = false }
-slotmap = { version = "1.0.7", default-features = false }
+agb = { workspace = true }
+crabioware-core = { path = "crates/crabioware-core" }
+crabioware-metagame = { path = "crates/metagame" }
+crabioware-pong = { path = "crates/games/pong" }
+crabioware-snake = { path = "crates/games/snake" }
+crabioware-paccrab = { path = "crates/games/paccrab" }
 
 [profile.dev]
 opt-level = 3
