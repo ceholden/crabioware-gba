@@ -48,25 +48,6 @@ impl<'g> PacCrabGame<'g> {
         bg1.commit(vram);
         bg1.set_visible(true);
     }
-
-    //    fn render_map<'g>(
-    //        &self,
-    //        graphics: &mut GraphicsResource<'g>,
-    //        tilemap: &mut TileMap<'g>,
-    //    ) -> Option<()> {
-    //        let gfx = match graphics {
-    //            GraphicsResource::Mode0(gfx) => gfx,
-    //            _ => unimplemented!("WRONG MODE"),
-    //        };
-    //        let mut mode0 = match tilemap {
-    //            TileMap::Mode0(tilemap_) => tilemap_,
-    //            _ => unimplemented!("WRONG MODE"),
-    //        };
-    //        if mode0.dirty {
-    //            self.render_level(gfx, &mut mode0);
-    //        };
-    //        Some(())
-    //    }
 }
 impl<'g> Game<'g> for PacCrabGame<'g> {
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
@@ -108,6 +89,7 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
         unmanaged: &mut OamUnmanaged,
         sprite_loader: &mut SpriteLoader,
     ) -> Option<()> {
+        let mut oam = unmanaged.iter();
         Some(())
     }
 }
