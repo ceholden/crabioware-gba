@@ -2,7 +2,10 @@ use agb::{input::ButtonController, interrupt::VBlank, rng::RandomNumberGenerator
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crabioware_core::{games::{Game, GameDifficulty, GameLoader, GameState, Games}, screens::{PauseScreen, StartScreen}};
+use crabioware_core::{
+    games::{Game, GameDifficulty, GameLoader, GameState, Games},
+    screens::{PauseScreen, StartScreen},
+};
 
 use crate::metagame::{MetaGame, MetaGameState};
 
@@ -45,14 +48,14 @@ impl GamePicker {
                     game.clear(&mut vram);
                     drop(game);
                     // FIXME: gameover screen
-                    return
-                },
+                    return;
+                }
                 GameState::Win(_) => {
                     game.clear(&mut vram);
                     drop(game);
                     // FIXME: win screen
-                    return
-                },
+                    return;
+                }
                 GameState::Running(_) => {
                     game.render(&mut vram, &mut unmanaged, &mut sprite_loader);
                     vblank.wait_for_vblank();
@@ -71,7 +74,6 @@ impl MetaGame for GamePicker {
         buttons: &mut ButtonController,
         loader: &impl GameLoader,
     ) -> MetaGameState {
-
         let mut rng = RandomNumberGenerator::new();
         let difficulty = GameDifficulty::HARD;
 
