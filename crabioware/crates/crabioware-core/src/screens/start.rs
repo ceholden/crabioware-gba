@@ -1,5 +1,3 @@
-use core::borrow::Borrow;
-
 use agb::display::object::{OamIterator, OamUnmanaged, ObjectUnmanaged, SpriteLoader};
 use agb::display::tiled::VRamManager;
 use agb::input::{Button, ButtonController};

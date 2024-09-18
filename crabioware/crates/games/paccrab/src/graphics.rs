@@ -4,12 +4,12 @@ use agb::{
 };
 
 // Graphics assets
-const SPRITES: &Graphics = include_aseprite!("assets/sprites.aseprite");
-const CRAB: &Tag = SPRITES.tags().get("crab");
-const GHOST_PINK: &Tag = SPRITES.tags().get("pink");
-const GHOST_YELLOW: &Tag = SPRITES.tags().get("yellow");
-const GHOST_BLUE: &Tag = SPRITES.tags().get("blue");
-const BERRY: &Tag = SPRITES.tags().get("berry");
+static SPRITES: &Graphics = include_aseprite!("assets/sprites.aseprite");
+static CRAB: &Tag = SPRITES.tags().get("crab");
+static GHOST_PINK: &Tag = SPRITES.tags().get("pink");
+static GHOST_YELLOW: &Tag = SPRITES.tags().get("yellow");
+static GHOST_BLUE: &Tag = SPRITES.tags().get("blue");
+static BERRY: &Tag = SPRITES.tags().get("berry");
 
 pub enum SpriteTag {
     Crab,

@@ -4,13 +4,13 @@ use agb::{
 };
 
 // Graphics assets
-const SPRITES: &Graphics = include_aseprite!("assets/common.aseprite");
-const GAMEOVER: &Tag = SPRITES.tags().get("gameover");
-const VICTORY: &Tag = SPRITES.tags().get("victory");
-const PAUSE: &Tag = SPRITES.tags().get("pause");
-const PONG: &Tag = SPRITES.tags().get("pong");
-const SNAKE: &Tag = SPRITES.tags().get("snake");
-const PACCRAB: &Tag = SPRITES.tags().get("paccrab");
+static SPRITES: &Graphics = include_aseprite!("assets/common.aseprite");
+static GAMEOVER: &Tag = SPRITES.tags().get("gameover");
+static VICTORY: &Tag = SPRITES.tags().get("victory");
+static PAUSE: &Tag = SPRITES.tags().get("pause");
+static PONG: &Tag = SPRITES.tags().get("pong");
+static SNAKE: &Tag = SPRITES.tags().get("snake");
+static PACCRAB: &Tag = SPRITES.tags().get("paccrab");
 
 pub enum SpriteTag {
     GameOver,
