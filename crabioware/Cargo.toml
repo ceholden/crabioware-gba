@@ -6,7 +6,7 @@ members = [
 ]
 
 [workspace.dependencies]
-agb = "^0.19.1"
+agb = { git = "https://github.com/agbrs/agb", branch = "master" }
 itertools = { version = "0.12.1", default-features = false }
 
 [workspace.package]

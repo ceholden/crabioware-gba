@@ -5,10 +5,10 @@ use agb::{
 };
 
 // Graphics assets
-const SPRITES: &Graphics = include_aseprite!("assets/sprites.aseprite");
-const PADDLE: &Tag = SPRITES.tags().get("paddle");
-const BALL: &Tag = SPRITES.tags().get("crab");
-const NUMBERS: &Tag = include_aseprite!("assets/numbers.aseprite")
+static SPRITES: &Graphics = include_aseprite!("assets/sprites.aseprite");
+static PADDLE: &Tag = SPRITES.tags().get("paddle");
+static BALL: &Tag = SPRITES.tags().get("crab");
+static NUMBERS: &Tag = include_aseprite!("assets/numbers.aseprite")
     .tags()
     .get("white");
 

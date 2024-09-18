@@ -14,8 +14,8 @@ pub struct Level {
     pub warps: &'static [(i32, i32)],
 }
 impl Level {
-    pub fn get_tileset(&self) -> TileSet<'_> {
-        tile_sheet::tiles.tiles
+    pub fn get_tileset(&self) -> &TileSet<'_> {
+        &tile_sheet::tiles.tiles
     }
 
     pub fn get_tilesetting(&self, idx: usize) -> TileSetting {
