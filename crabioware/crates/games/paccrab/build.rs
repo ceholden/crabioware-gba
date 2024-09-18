@@ -172,6 +172,7 @@ pub const fn get_level() -> Level {{
         walls: BACKGROUND,
         path: PATH,
         dimensions: Vector2D {{ x: WIDTH, y: HEIGHT }},
+        spawn: &POINTS_SPAWN[0],
         ghosts: POINTS_GHOST,
         berries: POINTS_BERRY,
         doors: POINTS_DOOR,

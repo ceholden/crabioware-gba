@@ -8,6 +8,7 @@ pub struct Level {
     pub path: &'static [u16],
     pub dimensions: Vector2D<u32>,
 
+    pub spawn: &'static (i32, i32),
     pub ghosts: &'static [(i32, i32)],
     pub berries: &'static [(i32, i32)],
     pub doors: &'static [(i32, i32)],

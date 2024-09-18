@@ -1,29 +1,67 @@
-use agb::display::object::{OamIterator, OamUnmanaged, ObjectUnmanaged, SpriteLoader};
+use agb::display::object::{OamUnmanaged, ObjectUnmanaged, SpriteLoader};
 use agb::display::tiled::{
     MapLoan, RegularBackgroundSize, RegularMap, TileFormat, TiledMap, VRamManager,
 };
-use agb::display::Priority;
+use agb::fixnum::Vector2D;
 use agb::input::{Button, ButtonController};
-use agb::mgba::DebugLevel;
 use agb::println;
 
 use agb::rng::RandomNumberGenerator;
+use crabioware_core::ecs::{EntityId, World};
 use crabioware_core::games::{Game, GameDifficulty, GameState, Games};
 use crabioware_core::graphics::{GraphicsResource, Mode0TileMap, TileMapResource, TileMode};
+use crabioware_core::types::Number;
 
+use super::components::{SpriteComponent, LocationComponent, VelocityComponent};
 use super::graphics::SpriteTag;
 use super::levels::{Level, Levels};
 
+
+struct Crab {
+    sprite: SpriteComponent,
+    location: LocationComponent,
+    velocity: VelocityComponent,
+}
+impl Crab {
+    fn new(x: Number, y: Number) -> Self {
+        Crab {
+            sprite: SpriteComponent { tag: SpriteTag::Crab, frame: 0 },
+            location: LocationComponent { location: Vector2D { x, y } },
+            velocity: VelocityComponent { velocity: Vector2D { x: 0.into(), y: 0.into() } },
+        }
+    }
+    fn create(self, world: &mut World) -> EntityId {
+        world
+            .create()
+            .with(self.sprite)
+            .with(self.location)
+            .with(self.velocity)
+            .build()
+    }
+}
+
+
 pub struct PacCrabGame<'g> {
+    world: World,
     time: i32,
     level: Level,
     tiles: Option<Mode0TileMap<'g>>,
 }
 impl<'g> PacCrabGame<'g> {
     pub fn new(difficulty: &GameDifficulty, rng: &mut RandomNumberGenerator) -> Self {
+
+        let mut world = World::new();
+        world.register_component::<SpriteComponent>();
+        world.register_component::<LocationComponent>();
+        world.register_component::<VelocityComponent>();
+
+        let level = Levels::LEVEL_1.get_level();
+        let crab = Crab::new(Number::new(level.spawn.0), Number::new(level.spawn.1)).create(&mut world);
+
         Self {
+            world,
             time: 0i32,
-            level: Levels::LEVEL_1.get_level(),
+            level,
             tiles: None,
         }
     }
@@ -50,15 +88,6 @@ impl<'g> PacCrabGame<'g> {
     }
 }
 impl<'g> Game<'g> for PacCrabGame<'g> {
-    fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
-        self.time += time;
-        println!("RUNNING PACCRAB");
-        if self.time < 200 {
-            GameState::Running(Games::PacCrab)
-        } else {
-            GameState::GameOver
-        }
-    }
 
     fn renderer(&self) -> TileMode {
         TileMode::Mode0
@@ -83,6 +112,16 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
         self.tiles = Some(tiles);
     }
 
+    fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
+        self.time += time;
+        println!("RUNNING PACCRAB");
+        if self.time < 200 {
+            GameState::Running(Games::PacCrab)
+        } else {
+            GameState::GameOver
+        }
+    }
+
     fn render(
         &mut self,
         vram: &mut VRamManager,
@@ -90,6 +129,17 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
         sprite_loader: &mut SpriteLoader,
     ) -> Option<()> {
         let mut oam = unmanaged.iter();
+
+        for (location, sprite) in self.world.components::<(&LocationComponent, &SpriteComponent)>() {
+            let mut object = ObjectUnmanaged::new(
+                sprite_loader.get_vram_sprite(sprite.tag.tag().sprite(sprite.frame.into()))
+            );
+            object
+                .set_position(location.location.floor())
+                .show();
+            oam.next()?.set(&object);
+        }
+
         Some(())
     }
 }
