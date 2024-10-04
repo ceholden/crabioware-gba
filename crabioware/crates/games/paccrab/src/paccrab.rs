@@ -1,7 +1,7 @@
 use agb::display::object::{OamUnmanaged, ObjectUnmanaged, SpriteLoader};
 use agb::display::tiled::{MapLoan, RegularMap, TiledMap, VRamManager};
 use agb::fixnum::{num, Vector2D};
-use agb::input::{Button, ButtonController, Tri};
+use agb::input::{Button, ButtonController};
 use agb::println;
 
 use agb::rng::RandomNumberGenerator;
@@ -11,30 +11,33 @@ use crabioware_core::graphics::{GraphicsResource, Mode0TileMap, TileMapResource,
 use crabioware_core::types::{Number, Rect};
 
 use super::components::{
-    CollisionComponent, LocationComponent, SpriteComponent, VelocityComponent,
+    CollisionComponent, Direction, DirectionComponent, LocationComponent, SpriteComponent,
+    VelocityComponent,
 };
 use super::graphics::SpriteTag;
 use super::levels::{Level, Levels};
 
 struct Crab {
-    sprite: SpriteComponent,
-    collision: CollisionComponent,
     location: LocationComponent,
+    direction: DirectionComponent,
     velocity: VelocityComponent,
+    collision: CollisionComponent,
+    sprite: SpriteComponent,
 }
 impl Crab {
     fn new(x: Number, y: Number) -> Self {
         Crab {
-            sprite: SpriteComponent {
-                tag: SpriteTag::Crab,
-                offset: Vector2D {
-                    x: (-4).into(),
-                    y: (-4).into(),
-                },
-                frame: 0,
-            },
             location: LocationComponent {
                 location: Vector2D { x, y },
+            },
+            direction: DirectionComponent {
+                direction: Direction::RIGHT,
+            },
+            velocity: VelocityComponent {
+                velocity: Vector2D {
+                    x: num!(0.5),
+                    y: num!(0.5),
+                },
             },
             collision: CollisionComponent {
                 collision: Rect {
@@ -48,11 +51,13 @@ impl Crab {
                     },
                 },
             },
-            velocity: VelocityComponent {
-                velocity: Vector2D {
-                    x: num!(0.5),
-                    y: num!(0.5),
+            sprite: SpriteComponent {
+                tag: SpriteTag::Crab,
+                offset: Vector2D {
+                    x: (-4).into(),
+                    y: (-4).into(),
                 },
+                frame: 0,
             },
         }
     }
@@ -61,6 +66,7 @@ impl Crab {
             .create()
             .with(self.sprite)
             .with(self.location)
+            .with(self.direction)
             .with(self.velocity)
             .with(self.collision)
             .build()
@@ -77,10 +83,11 @@ pub struct PacCrabGame<'g> {
 impl<'g> PacCrabGame<'g> {
     pub fn new(_: &GameDifficulty, _: &mut RandomNumberGenerator) -> Self {
         let mut world = World::new();
-        world.register_component::<SpriteComponent>();
         world.register_component::<LocationComponent>();
         world.register_component::<VelocityComponent>();
+        world.register_component::<DirectionComponent>();
         world.register_component::<CollisionComponent>();
+        world.register_component::<SpriteComponent>();
 
         let level = Levels::LEVEL_1.get_level();
         let player =
@@ -117,26 +124,42 @@ impl<'g> PacCrabGame<'g> {
     }
 
     fn system_player(&self, _time: i32, buttons: &ButtonController) {
-        let (mut location, mut velocity, _collision) = *self.world.entry::<(
-            &mut LocationComponent,
-            &mut VelocityComponent,
-            &CollisionComponent,
-        )>(&self.player);
+        println!("GRABBING COMPONENTS");
+        let (mut location, mut direction, velocity, _collision) =
+            *self.world.entry::<(
+                &mut LocationComponent,
+                &mut DirectionComponent,
+                &VelocityComponent,
+                &CollisionComponent,
+            )>(&self.player);
 
-        velocity.velocity.x = match buttons.x_tri() {
-            Tri::Positive => 1,
-            Tri::Negative => -1,
-            Tri::Zero => 0,
-        }
-        .into();
-        velocity.velocity.y = match buttons.y_tri() {
-            Tri::Positive => 1,
-            Tri::Negative => -1,
-            Tri::Zero => 0,
-        }
-        .into();
+        println!("GETTING DIRECTION");
 
-        location.location += velocity.velocity * num!(0.5);
+        if buttons.is_pressed(Button::LEFT) {
+            direction.direction = Direction::LEFT;
+        } else if buttons.is_pressed(Button::RIGHT) {
+            direction.direction = Direction::RIGHT;
+        } else if buttons.is_pressed(Button::UP) {
+            direction.direction = Direction::UP;
+        } else if buttons.is_pressed(Button::DOWN) {
+            direction.direction = Direction::DOWN;
+        }
+
+        println!("MOVING");
+        match direction.direction {
+            Direction::RIGHT => {
+                location.location.x += velocity.velocity.x;
+            }
+            Direction::LEFT => {
+                location.location.x -= velocity.velocity.x;
+            }
+            Direction::UP => {
+                location.location.y -= velocity.velocity.y;
+            }
+            Direction::DOWN => {
+                location.location.y += velocity.velocity.y;
+            }
+        }
     }
 }
 impl<'g> Game<'g> for PacCrabGame<'g> {

@@ -11,6 +11,20 @@ pub struct LocationComponent {
 }
 impl Component for LocationComponent {}
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Direction {
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DirectionComponent {
+    pub direction: Direction,
+}
+impl Component for DirectionComponent {}
+
 #[derive(Clone, Copy, Default)]
 pub struct VelocityComponent {
     pub velocity: Vector2D<Number>,
