@@ -1,6 +1,6 @@
 use agb::fixnum::Vector2D;
 use crabioware_core::ecs::Component;
-use crabioware_core::types::Number;
+use crabioware_core::types::{Number, Rect};
 
 use super::graphics::SpriteTag;
 
@@ -17,9 +17,16 @@ pub struct VelocityComponent {
 }
 impl Component for VelocityComponent {}
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct CollisionComponent {
+    pub collision: Rect<Number>,
+}
+impl Component for CollisionComponent {}
+
 #[derive(Clone, Copy, Debug)]
 pub struct SpriteComponent {
     pub tag: SpriteTag,
+    pub offset: Vector2D<Number>,
     pub frame: u8,
 }
 impl Component for SpriteComponent {}

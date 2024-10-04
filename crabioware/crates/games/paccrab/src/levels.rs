@@ -3,9 +3,11 @@ use agb::{fixnum::Vector2D, include_background_gfx};
 
 include_background_gfx!(tile_sheet, "000000", tiles => "assets/tiles.png");
 
+
+// FIXME: embed walls / path into a "Map"
 pub struct Level {
-    pub walls: &'static [u16],
-    pub path: &'static [u16],
+    pub walls: &'static [u8],
+    pub path: &'static [u8],
     pub dimensions: Vector2D<u32>,
 
     pub spawn: &'static (i32, i32),

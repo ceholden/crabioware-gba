@@ -1,33 +1,59 @@
 use agb::display::object::{OamUnmanaged, ObjectUnmanaged, SpriteLoader};
-use agb::display::tiled::{
-    MapLoan, RegularBackgroundSize, RegularMap, TileFormat, TiledMap, VRamManager,
-};
-use agb::fixnum::Vector2D;
-use agb::input::{Button, ButtonController};
+use agb::display::tiled::{MapLoan, RegularMap, TiledMap, VRamManager};
+use agb::fixnum::{num, Vector2D};
+use agb::input::{Button, ButtonController, Tri};
 use agb::println;
 
 use agb::rng::RandomNumberGenerator;
 use crabioware_core::ecs::{EntityId, World};
 use crabioware_core::games::{Game, GameDifficulty, GameState, Games};
 use crabioware_core::graphics::{GraphicsResource, Mode0TileMap, TileMapResource, TileMode};
-use crabioware_core::types::Number;
+use crabioware_core::types::{Number, Rect};
 
-use super::components::{SpriteComponent, LocationComponent, VelocityComponent};
+use super::components::{
+    CollisionComponent, LocationComponent, SpriteComponent, VelocityComponent,
+};
 use super::graphics::SpriteTag;
 use super::levels::{Level, Levels};
 
-
 struct Crab {
     sprite: SpriteComponent,
+    collision: CollisionComponent,
     location: LocationComponent,
     velocity: VelocityComponent,
 }
 impl Crab {
     fn new(x: Number, y: Number) -> Self {
         Crab {
-            sprite: SpriteComponent { tag: SpriteTag::Crab, frame: 0 },
-            location: LocationComponent { location: Vector2D { x, y } },
-            velocity: VelocityComponent { velocity: Vector2D { x: 0.into(), y: 0.into() } },
+            sprite: SpriteComponent {
+                tag: SpriteTag::Crab,
+                offset: Vector2D {
+                    x: (-4).into(),
+                    y: (-4).into(),
+                },
+                frame: 0,
+            },
+            location: LocationComponent {
+                location: Vector2D { x, y },
+            },
+            collision: CollisionComponent {
+                collision: Rect {
+                    position: Vector2D {
+                        x: 4.into(),
+                        y: 4.into(),
+                    },
+                    size: Vector2D {
+                        x: 2.into(),
+                        y: 8.into(),
+                    },
+                },
+            },
+            velocity: VelocityComponent {
+                velocity: Vector2D {
+                    x: num!(0.5),
+                    y: num!(0.5),
+                },
+            },
         }
     }
     fn create(self, world: &mut World) -> EntityId {
@@ -36,30 +62,33 @@ impl Crab {
             .with(self.sprite)
             .with(self.location)
             .with(self.velocity)
+            .with(self.collision)
             .build()
     }
 }
 
-
 pub struct PacCrabGame<'g> {
     world: World,
+    player: EntityId,
     time: i32,
     level: Level,
     tiles: Option<Mode0TileMap<'g>>,
 }
 impl<'g> PacCrabGame<'g> {
-    pub fn new(difficulty: &GameDifficulty, rng: &mut RandomNumberGenerator) -> Self {
-
+    pub fn new(_: &GameDifficulty, _: &mut RandomNumberGenerator) -> Self {
         let mut world = World::new();
         world.register_component::<SpriteComponent>();
         world.register_component::<LocationComponent>();
         world.register_component::<VelocityComponent>();
+        world.register_component::<CollisionComponent>();
 
         let level = Levels::LEVEL_1.get_level();
-        let crab = Crab::new(Number::new(level.spawn.0), Number::new(level.spawn.1)).create(&mut world);
+        let player =
+            Crab::new(Number::new(level.spawn.0), Number::new(level.spawn.1)).create(&mut world);
 
         Self {
             world,
+            player,
             time: 0i32,
             level,
             tiles: None,
@@ -86,9 +115,31 @@ impl<'g> PacCrabGame<'g> {
         bg1.commit(vram);
         bg1.set_visible(true);
     }
+
+    fn system_player(&self, _time: i32, buttons: &ButtonController) {
+        let (mut location, mut velocity, _collision) = *self.world.entry::<(
+            &mut LocationComponent,
+            &mut VelocityComponent,
+            &CollisionComponent,
+        )>(&self.player);
+
+        velocity.velocity.x = match buttons.x_tri() {
+            Tri::Positive => 1,
+            Tri::Negative => -1,
+            Tri::Zero => 0,
+        }
+        .into();
+        velocity.velocity.y = match buttons.y_tri() {
+            Tri::Positive => 1,
+            Tri::Negative => -1,
+            Tri::Zero => 0,
+        }
+        .into();
+
+        location.location += velocity.velocity * num!(0.5);
+    }
 }
 impl<'g> Game<'g> for PacCrabGame<'g> {
-
     fn renderer(&self) -> TileMode {
         TileMode::Mode0
     }
@@ -115,27 +166,34 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
         self.time += time;
         println!("RUNNING PACCRAB");
-        if self.time < 200 {
-            GameState::Running(Games::PacCrab)
-        } else {
+
+        self.system_player(time, buttons);
+
+        // FIXME: this is not a good exit condition
+        if buttons.is_just_pressed(Button::SELECT) {
             GameState::GameOver
+        } else {
+            GameState::Running(Games::PacCrab)
         }
     }
 
     fn render(
         &mut self,
-        vram: &mut VRamManager,
+        _vram: &mut VRamManager,
         unmanaged: &mut OamUnmanaged,
         sprite_loader: &mut SpriteLoader,
     ) -> Option<()> {
         let mut oam = unmanaged.iter();
 
-        for (location, sprite) in self.world.components::<(&LocationComponent, &SpriteComponent)>() {
+        for (location, sprite) in self
+            .world
+            .components::<(&LocationComponent, &SpriteComponent)>()
+        {
             let mut object = ObjectUnmanaged::new(
-                sprite_loader.get_vram_sprite(sprite.tag.tag().sprite(sprite.frame.into()))
+                sprite_loader.get_vram_sprite(sprite.tag.tag().sprite(sprite.frame.into())),
             );
             object
-                .set_position(location.location.floor())
+                .set_position((location.location + sprite.offset).floor())
                 .show();
             oam.next()?.set(&object);
         }
