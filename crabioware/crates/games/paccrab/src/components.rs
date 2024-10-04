@@ -4,7 +4,6 @@ use crabioware_core::types::{Number, Rect};
 
 use super::graphics::SpriteTag;
 
-
 #[derive(Clone, Copy, Default)]
 pub struct LocationComponent {
     pub location: Vector2D<Number>,
