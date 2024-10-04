@@ -51,7 +51,7 @@ _build-rom folder name:
     #!/usr/bin/env bash
     set -euxo pipefail
 
-    RELEASE_FOLDER="releases/"
+    RELEASE_FOLDER="releases"
     GAME_FOLDER="{{folder}}"
     INTERNAL_NAME="{{name}}"
 
