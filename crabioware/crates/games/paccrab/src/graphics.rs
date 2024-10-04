@@ -11,6 +11,7 @@ static GHOST_YELLOW: &Tag = SPRITES.tags().get("yellow");
 static GHOST_BLUE: &Tag = SPRITES.tags().get("blue");
 static BERRY: &Tag = SPRITES.tags().get("berry");
 
+#[derive(Clone, Copy, Debug)]
 pub enum SpriteTag {
     Crab,
     GhostPink,

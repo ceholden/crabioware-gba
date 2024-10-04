@@ -13,6 +13,8 @@ fn main() {
     }
 }
 
+// TODO: We can use tiled crate to better handle tmx files..
+//          In particular this would be useful for handling flipped tiles
 mod tiled_export {
     use std::collections::HashMap;
     use std::fs::File;
@@ -131,7 +133,7 @@ mod tiled_export {
         writeln!(&mut writer, "// Tilemap layers")?;
         for (name, data) in tile_layers.iter() {
             let varname = name.to_uppercase();
-            writeln!(&mut writer, "const {varname}: &[u16] = &[{data}];")?;
+            writeln!(&mut writer, "const {varname}: &[u8] = &[{data}];")?;
         }
 
         writeln!(&mut writer, "// Object layers")?;
@@ -172,6 +174,7 @@ pub const fn get_level() -> Level {{
         walls: BACKGROUND,
         path: PATH,
         dimensions: Vector2D {{ x: WIDTH, y: HEIGHT }},
+        spawn: &POINTS_SPAWN[0],
         ghosts: POINTS_GHOST,
         berries: POINTS_BERRY,
         doors: POINTS_DOOR,

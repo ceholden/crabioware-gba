@@ -1,16 +1,14 @@
-use agb::display::object::{OamIterator, OamUnmanaged, ObjectUnmanaged, SpriteLoader};
-use agb::display::tiled::VRamManager;
+use agb::display::object::{OamUnmanaged, ObjectUnmanaged, SpriteLoader};
 use agb::input::{Button, ButtonController};
 use agb::interrupt::VBlank;
 use agb::println;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::games::{GameState, Games, Game};
+use crate::games::Games;
 use crate::graphics::{GraphicsResource, Mode0TileMap, TileMapResource, TileMode};
 
 use super::graphics::SpriteTag;
-
 
 struct GameEntry {
     game: Games,
@@ -46,12 +44,7 @@ impl StartScreen {
         }
     }
 
-    pub fn pick_game(
-        gba: &mut agb::Gba,
-        buttons: &mut ButtonController,
-        vblank: &VBlank,
-    ) -> Games {
-
+    pub fn pick_game(gba: &mut agb::Gba, buttons: &mut ButtonController, vblank: &VBlank) -> Games {
         let mut start_screen = Self::new();
         let (graphics, mut vram, mut unmanaged, mut sprite_loader) = TileMode::Mode0.create(gba);
 
@@ -66,17 +59,14 @@ impl StartScreen {
         loop {
             buttons.update();
             if let Some(selected_game) = start_screen.update(buttons) {
-                return selected_game
+                return selected_game;
             };
             start_screen.render(&mut unmanaged, &mut sprite_loader);
             vblank.wait_for_vblank();
         }
     }
 
-    fn update(
-        &mut self,
-        buttons: &ButtonController,
-    ) -> Option<Games> {
+    fn update(&mut self, buttons: &ButtonController) -> Option<Games> {
         if buttons.is_just_pressed(Button::DOWN) && self.selection < (self.games.len() - 1) as u8 {
             println!("PRESSED DOWN");
             self.selection += 1;
@@ -88,7 +78,7 @@ impl StartScreen {
         if buttons.is_just_pressed(Button::A) {
             let game = self.games[self.selection as usize].game;
             println!("SELECTING GAME index={}, game={:?}", self.selection, game);
-            return Some(game)
+            return Some(game);
         }
         None
     }

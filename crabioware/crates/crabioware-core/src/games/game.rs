@@ -18,11 +18,11 @@ pub trait Game<'g> {
     // Default impl has no background tiles (e.g., pong, snake)
     fn init_tiles(&mut self, graphics: &'g GraphicsResource<'g>, vram: &mut VRamManager) {}
 
+    fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState;
     fn render(
         &mut self,
         vram: &mut VRamManager,
         unmanaged: &mut OamUnmanaged,
         sprite_loader: &mut SpriteLoader,
     ) -> Option<()>;
-    fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState;
 }
