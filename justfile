@@ -24,6 +24,10 @@ test-release:
 doctest:
     (cd crabioware && cargo test --doc -Z doctest-xcompile)
 
+act-local:
+    # https://github.com/catthehacker/docker_images
+    act -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:rust-latest
+
 clean:
     just _all-crates _clean
 
