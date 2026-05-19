@@ -3,6 +3,8 @@ use agb::{fixnum::Vector2D, include_background_gfx};
 
 include_background_gfx!(tile_sheet, "000000", tiles => "assets/tiles.png");
 
+pub const TILE_SIZE: i32 = 8;
+
 // FIXME: embed walls / path into a "Map"
 pub struct Level {
     pub walls: &'static [u8],
@@ -26,6 +28,17 @@ impl Level {
 
     pub fn set_background_paelttes(&self, vram: &mut VRamManager) {
         vram.set_background_palettes(tile_sheet::PALETTES);
+    }
+
+    pub fn is_walkable_tile(&self, tile_x: i32, tile_y: i32) -> bool {
+        if tile_x < 0
+            || tile_y < 0
+            || tile_x >= self.dimensions.x as i32
+            || tile_y >= self.dimensions.y as i32
+        {
+            return false;
+        }
+        self.path[(tile_y * self.dimensions.x as i32 + tile_x) as usize] != 1
     }
 }
 
