@@ -18,7 +18,7 @@ pub struct SpriteComponent {
 impl Component for SpriteComponent {}
 
 // For now, location is relative to the GBA screen (!!)
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default)]
 pub struct LocationComponent {
     pub position: Vector2D<Number>,
     pub angle: Number,
@@ -55,7 +55,7 @@ impl Default for MaxSpeed {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default)]
 pub struct VelocityComponent {
     pub velocity: Vector2D<Number>,
     // TODO: add acceleration and some notion of possible jerk
@@ -71,7 +71,7 @@ impl VelocityComponent {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct CollisionComponent {
     pub collision: Rect<Number>,
     pub bounce: Number,

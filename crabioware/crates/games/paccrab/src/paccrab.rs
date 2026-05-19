@@ -88,6 +88,80 @@ impl Crab {
     }
 }
 
+fn render_tiles(level: &Level, bg1: &mut MapLoan<'_, RegularMap>, vram: &mut VRamManager) {
+    level.set_background_paelttes(vram);
+    let tileset = level.get_tileset();
+    for y in 0..20u16 {
+        for x in 0..30u16 {
+            let tile_id = level.walls[(y * 30 + x) as usize] - 1;
+            println!("x/y=({},{}) tile_id={}", x, y, tile_id);
+            bg1.set_tile(
+                vram,
+                (x, y),
+                &tileset,
+                level.get_tilesetting(tile_id as usize),
+            );
+        }
+    }
+    bg1.commit(vram);
+    bg1.set_visible(true);
+}
+
+fn system_player(
+    world: &World,
+    player: &EntityId,
+    level: &Level,
+    buttons: &ButtonController,
+) {
+    println!("GRABBING COMPONENTS");
+    world.with::<(
+        &mut LocationComponent,
+        &mut DirectionComponent,
+        &VelocityComponent,
+        &CollisionComponent,
+    ), _, _>(player, |(mut location, mut direction, velocity, collision)| {
+        println!("GETTING DIRECTION");
+        if buttons.is_pressed(Button::LEFT) {
+            direction.direction = Direction::LEFT;
+        } else if buttons.is_pressed(Button::RIGHT) {
+            direction.direction = Direction::RIGHT;
+        } else if buttons.is_pressed(Button::UP) {
+            direction.direction = Direction::UP;
+        } else if buttons.is_pressed(Button::DOWN) {
+            direction.direction = Direction::DOWN;
+        }
+
+        println!("MOVING");
+        let coll_rect = collision.collision;
+        match direction.direction {
+            Direction::RIGHT => {
+                let new_x = location.location.x + velocity.velocity.x;
+                if !overlaps_wall(level, new_x, location.location.y, coll_rect) {
+                    location.location.x = new_x;
+                }
+            }
+            Direction::LEFT => {
+                let new_x = location.location.x - velocity.velocity.x;
+                if !overlaps_wall(level, new_x, location.location.y, coll_rect) {
+                    location.location.x = new_x;
+                }
+            }
+            Direction::UP => {
+                let new_y = location.location.y - velocity.velocity.y;
+                if !overlaps_wall(level, location.location.x, new_y, coll_rect) {
+                    location.location.y = new_y;
+                }
+            }
+            Direction::DOWN => {
+                let new_y = location.location.y + velocity.velocity.y;
+                if !overlaps_wall(level, location.location.x, new_y, coll_rect) {
+                    location.location.y = new_y;
+                }
+            }
+        }
+    });
+}
+
 pub struct PacCrabGame<'g> {
     world: World,
     player: EntityId,
@@ -117,78 +191,6 @@ impl<'g> PacCrabGame<'g> {
         }
     }
 
-    fn render_tiles(&self, bg1: &mut MapLoan<'g, RegularMap>, vram: &mut VRamManager) {
-        self.level.set_background_paelttes(vram);
-
-        let tileset = self.level.get_tileset();
-
-        for y in 0..20u16 {
-            for x in 0..30u16 {
-                let tile_id = self.level.walls[(y * 30 + x) as usize] - 1;
-                println!("x/y=({},{}) tile_id={}", x, y, tile_id);
-                bg1.set_tile(
-                    vram,
-                    (x, y),
-                    &tileset,
-                    self.level.get_tilesetting(tile_id as usize),
-                );
-            }
-        }
-        bg1.commit(vram);
-        bg1.set_visible(true);
-    }
-
-    fn system_player(&self, _time: i32, buttons: &ButtonController) {
-        let level = &self.level;
-
-        println!("GRABBING COMPONENTS");
-        self.world.with::<(
-            &mut LocationComponent,
-            &mut DirectionComponent,
-            &VelocityComponent,
-            &CollisionComponent,
-        ), _, _>(&self.player, |(mut location, mut direction, velocity, collision)| {
-            println!("GETTING DIRECTION");
-            if buttons.is_pressed(Button::LEFT) {
-                direction.direction = Direction::LEFT;
-            } else if buttons.is_pressed(Button::RIGHT) {
-                direction.direction = Direction::RIGHT;
-            } else if buttons.is_pressed(Button::UP) {
-                direction.direction = Direction::UP;
-            } else if buttons.is_pressed(Button::DOWN) {
-                direction.direction = Direction::DOWN;
-            }
-
-            println!("MOVING");
-            let coll_rect = collision.collision;
-            match direction.direction {
-                Direction::RIGHT => {
-                    let new_x = location.location.x + velocity.velocity.x;
-                    if !overlaps_wall(level, new_x, location.location.y, coll_rect) {
-                        location.location.x = new_x;
-                    }
-                }
-                Direction::LEFT => {
-                    let new_x = location.location.x - velocity.velocity.x;
-                    if !overlaps_wall(level, new_x, location.location.y, coll_rect) {
-                        location.location.x = new_x;
-                    }
-                }
-                Direction::UP => {
-                    let new_y = location.location.y - velocity.velocity.y;
-                    if !overlaps_wall(level, location.location.x, new_y, coll_rect) {
-                        location.location.y = new_y;
-                    }
-                }
-                Direction::DOWN => {
-                    let new_y = location.location.y + velocity.velocity.y;
-                    if !overlaps_wall(level, location.location.x, new_y, coll_rect) {
-                        location.location.y = new_y;
-                    }
-                }
-            }
-        });
-    }
 }
 impl<'g> Game<'g> for PacCrabGame<'g> {
     fn renderer(&self) -> TileMode {
@@ -210,14 +212,14 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
 
         let mut tiles = Mode0TileMap::default_32x32_4bpp(&mode0);
         tiles.bg1.set_visible(true);
-        self.render_tiles(&mut tiles.bg1, vram);
+        render_tiles(&self.level, &mut tiles.bg1, vram);
         self.tiles = Some(tiles);
     }
 
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
         self.time += time;
 
-        self.system_player(time, buttons);
+        system_player(&self.world, &self.player, &self.level, buttons);
 
         // FIXME: this is not a good exit condition
         if buttons.is_just_pressed(Button::SELECT) {
