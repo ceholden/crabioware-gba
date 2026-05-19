@@ -8,7 +8,6 @@ use super::core::{Component, ComponentMap, EntityId, EntityMap};
 use super::filter::EntityMapFilter;
 use super::view::View;
 
-pub type EntityView<'r, V> = Box<<V as View>::Result<'r>>;
 pub type ComponentView<'r, V> = Box<dyn Iterator<Item = <V as View>::Result<'r>> + 'r>;
 pub type CombinationComponentView<'r, V> =
     Box<dyn Iterator<Item = (<V as View>::Result<'r>, <V as View>::Result<'r>)> + 'r>;
@@ -53,11 +52,12 @@ impl World {
         self.entities.contains_key(*entity_id)
     }
 
-    pub fn entry<V>(&self, entity_id: &EntityId) -> EntityView<'_, V>
+    pub fn with<'a, V, R, F>(&'a self, entity_id: &EntityId, f: F) -> R
     where
         V: View,
+        F: FnOnce(V::Result<'a>) -> R,
     {
-        Box::new(V::borrow(*entity_id, &self.components))
+        f(V::borrow(*entity_id, &self.components))
     }
 
     pub fn entries<'e, V>(&'e self, entity_ids: &'e [EntityId]) -> ComponentView<'e, V>
@@ -71,7 +71,7 @@ impl World {
         )
     }
 
-    fn filter<'f, V, F>(&'f self, entity_filter: &'f F) -> Box<dyn Iterator<Item = EntityId> + '_>
+    fn filter<'f, V, F>(&'f self, entity_filter: &'f F) -> Box<dyn Iterator<Item = EntityId> + 'f>
     where
         V: View,
         F: EntityMapFilter,
@@ -85,7 +85,7 @@ impl World {
         )
     }
 
-    pub fn query<'f, V, F>(&'f self, entity_filter: &'f F) -> ComponentView<V>
+    pub fn query<'f, V, F>(&'f self, entity_filter: &'f F) -> ComponentView<'f, V>
     where
         V: View,
         F: EntityMapFilter,
