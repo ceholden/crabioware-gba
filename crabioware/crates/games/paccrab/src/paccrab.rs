@@ -3,7 +3,6 @@ use agb::display::tiled::{MapLoan, RegularMap, TiledMap, VRamManager};
 use agb::fixnum::{num, Vector2D};
 use agb::input::{Button, ButtonController};
 use agb::println;
-
 use agb::rng::RandomNumberGenerator;
 use crabioware_core::ecs::{EntityId, World};
 use crabioware_core::games::{Game, GameDifficulty, GameState, Games};
@@ -15,7 +14,23 @@ use super::components::{
     VelocityComponent,
 };
 use super::graphics::SpriteTag;
-use super::levels::{Level, Levels};
+use super::levels::{Level, Levels, TILE_SIZE};
+
+fn overlaps_wall(level: &Level, x: Number, y: Number, coll: Rect<Number>) -> bool {
+    let left = (x + coll.position.x).floor() / TILE_SIZE;
+    let right = (x + coll.position.x + coll.size.x).floor() / TILE_SIZE;
+    let top = (y + coll.position.y).floor() / TILE_SIZE;
+    let bottom = (y + coll.position.y + coll.size.y).floor() / TILE_SIZE;
+
+    for ty in top..=bottom {
+        for tx in left..=right {
+            if !level.is_walkable_tile(tx, ty) {
+                return true;
+            }
+        }
+    }
+    false
+}
 
 struct Crab {
     location: LocationComponent,
@@ -42,12 +57,12 @@ impl Crab {
             collision: CollisionComponent {
                 collision: Rect {
                     position: Vector2D {
-                        x: 4.into(),
-                        y: 4.into(),
+                        x: (-3).into(),
+                        y: (-3).into(),
                     },
                     size: Vector2D {
-                        x: 2.into(),
-                        y: 8.into(),
+                        x: 6.into(),
+                        y: 6.into(),
                     },
                 },
             },
@@ -124,16 +139,15 @@ impl<'g> PacCrabGame<'g> {
     }
 
     fn system_player(&self, _time: i32, buttons: &ButtonController) {
-        println!("GRABBING COMPONENTS");
-        let (mut location, mut direction, velocity, _collision) =
+        let level = &self.level;
+
+        let (mut location, mut direction, velocity, collision) =
             *self.world.entry::<(
                 &mut LocationComponent,
                 &mut DirectionComponent,
                 &VelocityComponent,
                 &CollisionComponent,
             )>(&self.player);
-
-        println!("GETTING DIRECTION");
 
         if buttons.is_pressed(Button::LEFT) {
             direction.direction = Direction::LEFT;
@@ -145,19 +159,31 @@ impl<'g> PacCrabGame<'g> {
             direction.direction = Direction::DOWN;
         }
 
-        println!("MOVING");
+        let coll_rect = collision.collision;
         match direction.direction {
             Direction::RIGHT => {
-                location.location.x += velocity.velocity.x;
+                let new_x = location.location.x + velocity.velocity.x;
+                if !overlaps_wall(level, new_x, location.location.y, coll_rect) {
+                    location.location.x = new_x;
+                }
             }
             Direction::LEFT => {
-                location.location.x -= velocity.velocity.x;
+                let new_x = location.location.x - velocity.velocity.x;
+                if !overlaps_wall(level, new_x, location.location.y, coll_rect) {
+                    location.location.x = new_x;
+                }
             }
             Direction::UP => {
-                location.location.y -= velocity.velocity.y;
+                let new_y = location.location.y - velocity.velocity.y;
+                if !overlaps_wall(level, location.location.x, new_y, coll_rect) {
+                    location.location.y = new_y;
+                }
             }
             Direction::DOWN => {
-                location.location.y += velocity.velocity.y;
+                let new_y = location.location.y + velocity.velocity.y;
+                if !overlaps_wall(level, location.location.x, new_y, coll_rect) {
+                    location.location.y = new_y;
+                }
             }
         }
     }
@@ -188,7 +214,6 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
 
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
         self.time += time;
-        println!("RUNNING PACCRAB");
 
         self.system_player(time, buttons);
 
