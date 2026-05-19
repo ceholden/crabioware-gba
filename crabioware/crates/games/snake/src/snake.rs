@@ -99,6 +99,153 @@ pub struct SnakeGame<'g> {
     // background tilemap
     tiles: Option<Mode0TileMap<'g>>,
 }
+fn system_controller(
+    world: &World,
+    body: &[EntityId],
+    head_direction: &mut DirectionComponent,
+    buttons: &ButtonController,
+) {
+    let direction = world.with::<&DirectionComponent, _, _>(&body[0], |d| *d);
+    match buttons.x_tri() {
+        Tri::Positive => {
+            if direction != DirectionComponent::LEFT {
+                *head_direction = DirectionComponent::RIGHT;
+            }
+        }
+        Tri::Negative => {
+            if direction != DirectionComponent::RIGHT {
+                *head_direction = DirectionComponent::LEFT;
+            }
+        }
+        _ => {}
+    };
+    match buttons.y_tri() {
+        Tri::Positive => {
+            if direction != DirectionComponent::UP {
+                *head_direction = DirectionComponent::DOWN;
+            }
+        }
+        Tri::Negative => {
+            if direction != DirectionComponent::DOWN {
+                *head_direction = DirectionComponent::UP;
+            }
+        }
+        _ => {}
+    };
+}
+
+fn system_head(
+    world: &World,
+    body: &[EntityId],
+    head_direction: DirectionComponent,
+    time: i32,
+) -> TileComponent {
+    // FIXME: snake sprite changes with direction
+    world.with::<(&mut DirectionComponent, &TileComponent), _, _>(
+        &body[0],
+        |(mut direction, tile)| {
+            let new_tile = TileComponent {
+                x: tile.x.wrapping_add(head_direction.dx() * time as i16),
+                y: tile.y.wrapping_add(head_direction.dy() * time as i16),
+            };
+            *direction = head_direction;
+            new_tile
+        },
+    )
+}
+
+fn system_spawn_berry(
+    world: &mut World,
+    berries: &mut Vec<EntityId>,
+    rng: &mut RandomNumberGenerator,
+) {
+    if berries.len() == 0 {
+        // FIXME: berries spawn randomly where snake isn't
+        let berry = Berry::random(rng).create(world);
+        berries.push(berry);
+    }
+}
+
+fn system_eat_berry(
+    world: &mut World,
+    berries: &mut Vec<EntityId>,
+    head_tile: &TileComponent,
+) -> u8 {
+    let mut eaten: u8 = 0;
+    berries.retain(|&berry| {
+        let berry_tile = world.with::<&TileComponent, _, _>(&berry, |t| *t);
+        if berry_tile.equals(head_tile) {
+            eaten += 1;
+            world.destroy(&berry);
+            return false;
+        }
+        return true;
+    });
+    eaten
+}
+
+fn system_body(
+    world: &mut World,
+    body: &mut Vec<EntityId>,
+    next_head: &TileComponent,
+    berries_eaten: u8,
+) {
+    let body_length = body.len();
+    if berries_eaten > 0 {
+        let tail = world.with::<&TileComponent, _, _>(&body[body_length - 1], |t| *t);
+        for _ in 0..berries_eaten {
+            let new_tail = Body::new(tail).create(world);
+            body.push(new_tail);
+        }
+    }
+    for (i, body_from_tail) in body.iter().enumerate().rev() {
+        let new_tile: TileComponent = if i == 0 {
+            *next_head
+        } else {
+            world.with::<&TileComponent, _, _>(&body[i - 1], |t| *t)
+        };
+        world.with::<&mut TileComponent, _, _>(body_from_tail, |mut tile| {
+            *tile = new_tile;
+        });
+    }
+}
+
+fn system_collide(world: &World, body: &[EntityId], head: &TileComponent) -> GameState {
+    if head.hit_wall() {
+        return GameState::GameOver;
+    }
+    for body_entity in body[1..].iter() {
+        let hit = world.with::<&TileComponent, _, _>(body_entity, |tile| head.equals(&tile));
+        if hit {
+            return GameState::GameOver;
+        }
+    }
+    GameState::Running(Games::Snake)
+}
+
+fn renderer_digits(score: u8, loader: &mut SpriteLoader, oam: &mut OamIterator) {
+    let digits: Vec<u8> = match score {
+        0 => vec![0u8],
+        _ => {
+            let mut digits: Vec<u8> = Vec::new();
+            let mut score_ = score;
+            while score_ != 0 {
+                digits.push(score_ % 10);
+                score_ /= 10;
+            }
+            digits
+        }
+    };
+    for (i, digit) in digits.iter().rev().enumerate() {
+        let sprite_tag = SpriteTag::Numbers.tag().sprite(*digit as usize);
+        let mut object = ObjectUnmanaged::new(loader.get_vram_sprite(sprite_tag));
+        object.set_x(8 + 4 * i as u16).set_y(8).show();
+        if let Some(slot) = oam.next() {
+            slot.set(&object);
+        }
+    }
+}
+
 impl<'g> SnakeGame<'g> {
     pub fn new(difficulty: &GameDifficulty, rng: &mut RandomNumberGenerator) -> Self {
         let mut world = World::new();
@@ -140,145 +287,6 @@ impl<'g> SnakeGame<'g> {
         }
     }
 
-    fn system_controller(&mut self, buttons: &ButtonController) {
-        let direction = self.world.with::<&DirectionComponent, _, _>(&self.body[0], |d| *d);
-        match buttons.x_tri() {
-            Tri::Positive => {
-                if direction != DirectionComponent::LEFT {
-                    self.head_direction = DirectionComponent::RIGHT;
-                }
-            }
-            Tri::Negative => {
-                if direction != DirectionComponent::RIGHT {
-                    self.head_direction = DirectionComponent::LEFT;
-                }
-            }
-            _ => {}
-        };
-        match buttons.y_tri() {
-            Tri::Positive => {
-                if direction != DirectionComponent::UP {
-                    self.head_direction = DirectionComponent::DOWN;
-                }
-            }
-            Tri::Negative => {
-                if direction != DirectionComponent::DOWN {
-                    self.head_direction = DirectionComponent::UP;
-                }
-            }
-            _ => {}
-        };
-    }
-
-    fn system_head(&self, time: i32) -> TileComponent {
-        // FIXME: snake sprite changes with direction
-        let head_direction = self.head_direction;
-        self.world.with::<(&mut DirectionComponent, &TileComponent), _, _>(
-            &self.body[0],
-            |(mut direction, tile)| {
-                let new_tile = TileComponent {
-                    x: tile.x.wrapping_add(head_direction.dx() * time as i16),
-                    y: tile.y.wrapping_add(head_direction.dy() * time as i16),
-                };
-                *direction = head_direction;
-                new_tile
-            },
-        )
-    }
-
-    fn system_spawn_berry(&mut self) {
-        // Spawn berries?
-        if self.berries.len() == 0 {
-            // FIXME: berries spawn randomly where snake isn't
-            let berry = Berry::random(&mut self.rng).create(&mut self.world);
-            self.berries.push(berry);
-        }
-    }
-
-    // Check if head has eaten a berry, returning nutritional content of berry
-    fn system_eat_berry(&mut self, head_tile: &TileComponent) -> u8 {
-        let mut eaten: u8 = 0;
-        self.berries.retain(|&berry| {
-            let berry_tile = self.world.with::<&TileComponent, _, _>(&berry, |t| *t);
-            if berry_tile.equals(&head_tile) {
-                eaten += 1;
-                self.world.destroy(&berry);
-                return false;
-            }
-            return true;
-        });
-        eaten
-    }
-
-    fn system_body(&mut self, next_head: &TileComponent, berries_eaten: u8) {
-        // Store original body length
-        let body_length = self.body.len();
-
-        // Add new tail segment(s)
-        if berries_eaten > 0 {
-            let tail = self
-                .world
-                .with::<&TileComponent, _, _>(&self.body[body_length - 1], |t| *t);
-            for _ in 0..berries_eaten {
-                let new_tail = Body::new(tail.clone()).create(&mut self.world);
-                self.body.push(new_tail);
-            }
-        }
-
-        // Move the snake body up 1 segment
-        for (i, body_from_tail) in self.body.iter().enumerate().rev() {
-            let new_tile: TileComponent = if i == 0 {
-                // Move head to next tile
-                *next_head
-            } else {
-                // Or move tail one segment closer to head
-                self.world.with::<&TileComponent, _, _>(&self.body[i - 1], |t| *t)
-            };
-            self.world.with::<&mut TileComponent, _, _>(body_from_tail, |mut tile| {
-                *tile = new_tile;
-            });
-        }
-    }
-
-    fn system_collide(&mut self, head: &TileComponent) -> GameState {
-        // Head hit a wall
-        if head.hit_wall() {
-            return GameState::GameOver;
-        }
-        // Snake bit itself
-        for body in self.body[1..].iter() {
-            let hit = self.world.with::<&TileComponent, _, _>(body, |tile| head.equals(&tile));
-            if hit {
-                return GameState::GameOver;
-            }
-        }
-        GameState::Running(Games::Snake)
-    }
-
-    fn renderer_digits(&self, loader: &mut SpriteLoader, oam: &mut OamIterator) {
-        // FIXME: refactor into some commonly useful score screen
-        // FIXMEx2: isn't there a background layer for stuff like this?
-        let digits: Vec<u8> = match self.game_state.score {
-            0 => vec![0u8],
-            _ => {
-                let mut digits: Vec<u8> = Vec::new();
-                let mut score_ = self.game_state.score.clone();
-                while score_ != 0 {
-                    digits.push(score_ % 10);
-                    score_ /= 10;
-                }
-                digits
-            }
-        };
-        for (i, digit) in digits.iter().rev().enumerate() {
-            let sprite_tag = SpriteTag::Numbers.tag().sprite(*digit as usize);
-            let mut object = ObjectUnmanaged::new(loader.get_vram_sprite(sprite_tag));
-            object.set_x(8 + 4 * i as u16).set_y(8).show();
-            if let Some(slot) = oam.next() {
-                slot.set(&object);
-            }
-        }
-    }
 }
 impl<'g> Game<'g> for SnakeGame<'g> {
     fn renderer(&self) -> TileMode {
@@ -306,25 +314,22 @@ impl<'g> Game<'g> for SnakeGame<'g> {
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
         self.game_state.time = self.game_state.time.wrapping_add_signed(time);
 
-        self.system_controller(buttons);
+        system_controller(&self.world, &self.body, &mut self.head_direction, buttons);
 
         // Only advance every FPS / speed ~+ 1/sec on easy
         if self.game_state.time % self.game_state.speed as u32 != 0 {
             return GameState::Running(Games::Snake);
         }
 
-        // Move head tile in direction
-        let head_tile = self.system_head(time);
+        let head_tile = system_head(&self.world, &self.body, self.head_direction, time);
+        let eaten = system_eat_berry(&mut self.world, &mut self.berries, &head_tile);
+        system_spawn_berry(&mut self.world, &mut self.berries, &mut self.rng);
+        system_body(&mut self.world, &mut self.body, &head_tile, eaten);
+        let state = system_collide(&self.world, &self.body, &head_tile);
 
-        let eaten = self.system_eat_berry(&head_tile);
-        self.system_spawn_berry();
-
-        self.system_body(&head_tile, eaten);
-
-        let state = self.system_collide(&head_tile);
         match state {
             GameState::Running(game) => {
-                self.game_state.score += eaten as u8;
+                self.game_state.score += eaten;
                 if self.game_state.score > self.game_state.max_score {
                     GameState::Win(game)
                 } else {
@@ -343,7 +348,7 @@ impl<'g> Game<'g> for SnakeGame<'g> {
     ) -> Option<()> {
         let mut oam = unmanaged.iter();
 
-        self.renderer_digits(sprite_loader, &mut oam);
+        renderer_digits(self.game_state.score, sprite_loader, &mut oam);
 
         let iter = self
             .world

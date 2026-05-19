@@ -229,6 +229,272 @@ impl Paddle {
     }
 }
 
+fn system_player(world: &World, player: EntityId, time: i32, buttons: &ButtonController) {
+    world.with::<(
+        &mut LocationComponent,
+        &mut VelocityComponent,
+        &CollisionComponent,
+    ), _, _>(&player, |(mut location, mut velocity, collision)| {
+        match buttons.y_tri() {
+            Tri::Positive => {
+                let new_velocity = velocity.velocity.y + velocity.acceleration.y * time;
+                velocity.velocity.y = new_velocity;
+            }
+            Tri::Negative => {
+                let new_velocity = velocity.velocity.y - velocity.acceleration.y * time;
+                velocity.velocity.y = new_velocity;
+            }
+            _ => {
+                let new_velocity = if velocity.velocity.y == num!(0.) {
+                    velocity.velocity.y
+                } else if velocity.velocity.y > num!(0.) {
+                    velocity.velocity.y - velocity.acceleration.y * time
+                } else {
+                    velocity.velocity.y + velocity.acceleration.y * time
+                };
+                velocity.velocity.y = new_velocity;
+            }
+        };
+        location.position.y += velocity.velocity.y * time;
+        clamp_paddle(&mut location, &mut velocity, &collision);
+    });
+}
+
+fn system_balls(world: &World, balls: &[EntityId], time: i32) {
+    for (mut location, velocity) in
+        world.entries::<(&mut LocationComponent, &VelocityComponent)>(balls)
+    {
+        location.position += velocity.velocity * time;
+        location.angle += velocity.rotation * time;
+    }
+}
+
+fn system_cpu_acquire_target(
+    world: &World,
+    balls: &[EntityId],
+    paddle_location: &LocationComponent,
+    time: i32,
+) -> (Option<EntityId>, Number) {
+    let mut incoming = Vec::<(Number, EntityId, Vector2D<Number>, Vector2D<Number>)>::new();
+    for (entity, location, velocity, collision) in world.entries::<(
+        EntityId,
+        &LocationComponent,
+        &VelocityComponent,
+        &CollisionComponent,
+    )>(balls)
+    {
+        let delta = paddle_location.position.x - location.position.x;
+        let eta = if velocity.velocity.x != num!(0.) {
+            delta / velocity.velocity.x
+        } else {
+            num!(9999.)
+        };
+        if eta > num!(0.) {
+            incoming.push((
+                eta,
+                entity,
+                location.position + collision.collision.size / num!(2.),
+                velocity.velocity,
+            ))
+        }
+    }
+
+    // FIXME: closest.. that we can reach
+    if incoming.len() > 0 {
+        incoming.sort_by(|(a, ..), (b, ..)| a.cmp(b));
+        let (eta, entity, position, velocity) = incoming[0];
+        if eta < num!(180.) {
+            return (Some(entity), position.y + velocity.y * time);
+        }
+    }
+    (None, Number::new(GBA_HEIGHT / 2))
+}
+
+fn system_cpu_track_target(
+    world: &World,
+    balls: &[EntityId],
+    tracked_duration: u32,
+    target: EntityId,
+    paddle_location: &LocationComponent,
+    time: i32,
+) -> (Option<EntityId>, bool, Number) {
+    if world.is_alive(&target) {
+        // FIXME: check frames to impact against delta_y distance.. we might not make it!
+        let paddle_pos_x = paddle_location.position.x;
+        let result = world.with::<(
+            &LocationComponent,
+            &VelocityComponent,
+            &CollisionComponent,
+        ), _, _>(&target, |(ball_location, ball_velocity, ball_collision)| {
+            // Don't get hyper fixated on a target without rescanning
+            if tracked_duration < 60 {
+                let delta = paddle_pos_x - ball_location.position.x;
+                if delta * ball_velocity.velocity.x > num!(0.) {
+                    let target_y = ball_location.position.y
+                        + ball_collision.collision.size.y
+                        + ball_velocity.velocity.y * time;
+                    return Some((Some(target), true, target_y));
+                }
+            }
+            None
+        });
+        if let Some(r) = result {
+            return r;
+        }
+    }
+    let (new_target, y_target) = system_cpu_acquire_target(world, balls, paddle_location, time);
+    (new_target, false, y_target)
+}
+
+fn system_cpu_paddle(
+    world: &World,
+    entity: EntityId,
+    balls: &[EntityId],
+    opponent_state: &mut OpponentResource,
+    game_state: &GameStateResource,
+    time: i32,
+) {
+    // FIXME: increment opponent logic ~ GameDifficulty
+    world.with::<(
+        &mut LocationComponent,
+        &mut VelocityComponent,
+        &CollisionComponent,
+    ), _, _>(&entity, |(mut location, mut velocity, collision)| {
+        let (target, target_y) = match opponent_state.target {
+            Some(target) => {
+                let (new_target, tracked, target_y) = system_cpu_track_target(
+                    world,
+                    balls,
+                    opponent_state.tracked_duration,
+                    target,
+                    &*location,
+                    time,
+                );
+                if tracked {
+                    opponent_state.tracked_duration += 1;
+                } else {
+                    *opponent_state = OpponentResource::reset(new_target);
+                }
+                (new_target, target_y)
+            }
+            None => system_cpu_acquire_target(world, balls, &*location, time),
+        };
+        opponent_state.target = target;
+
+        let delta_y =
+            target_y - location.position.y - collision.collision.size.y / num!(2.);
+        let zero = num!(0.);
+        let new_velocity_y = if delta_y < zero {
+            velocity.velocity.y - velocity.acceleration.y * time
+        } else if delta_y > zero {
+            velocity.velocity.y + velocity.acceleration.y * time
+        } else {
+            0.into()
+        };
+        velocity.velocity.y = new_velocity_y;
+        velocity.clamp_velocity(&game_state.max_speed);
+
+        let move_range_y = velocity.velocity.y * time;
+        let move_y = match delta_y.abs() < move_range_y.abs() {
+            true => delta_y,
+            false => move_range_y,
+        };
+        location.position.y += move_y;
+        clamp_paddle(&mut location, &mut velocity, &collision);
+    });
+}
+
+fn system_collision(world: &World, max_speed: &MaxSpeed) {
+    // We're checking intersection based on potential movement, not
+    // trajectory. If entities are moving really fast we might
+    // have them phase through each other, but otherwise this is
+    // a quicker way of checking collisions than continuous collision detection
+    for (
+        (mut location_a, mut velocity_a, collision_a),
+        (mut location_b, mut velocity_b, collision_b),
+    ) in world.combinations::<(
+        &mut LocationComponent,
+        &mut VelocityComponent,
+        &CollisionComponent,
+    )>() {
+        let collision_box_a = collision_a.collision.translate(location_a.position);
+        let collision_box_b = collision_b.collision.translate(location_b.position);
+
+        if let Some(collided) = collision_box_a.separation(&collision_box_b) {
+            let inv_masses = collision_a.inv_mass + collision_b.inv_mass;
+            let delta_a = collided.separation * collision_a.inv_mass / inv_masses;
+            let delta_b = collided.separation * collision_b.inv_mass / inv_masses;
+            location_a.position -= delta_a;
+            location_b.position += delta_b;
+
+            let elasticity = collision_a.bounce.min(collision_b.bounce);
+            let relative_velocity = velocity_a.velocity - velocity_b.velocity;
+            let relative_velocity_norm = relative_velocity.dot(collided.normal);
+
+            if relative_velocity_norm > num!(0.) {
+                // FIXME: missing representation of tangent impulse + friction info
+                let impulse = -(num!(1.) + elasticity) * relative_velocity_norm / inv_masses;
+                velocity_a.velocity += collided.normal * impulse * collision_a.inv_mass;
+                velocity_b.velocity -= collided.normal * impulse * collision_b.inv_mass;
+                velocity_a.clamp_velocity(max_speed);
+                velocity_b.clamp_velocity(max_speed);
+            }
+        }
+    }
+}
+
+fn system_bounds(
+    world: &mut World,
+    game_state: &mut GameStateResource,
+    balls: &mut Vec<EntityId>,
+    game_rng: &mut RandomNumberGenerator,
+) {
+    let zero: Number = num!(0.);
+    let mut scored = Vec::<EntityId>::new();
+    for (entity, location, mut velocity, collision) in world.entries::<(
+        EntityId,
+        &LocationComponent,
+        &mut VelocityComponent,
+        &CollisionComponent,
+    )>(balls)
+    {
+        if (location.position.y < zero && velocity.velocity.y < zero)
+            || (location.position.y + collision.collision.size.y > GBA_HEIGHT.into()
+                && velocity.velocity.y > zero)
+        {
+            velocity.velocity.y *= num!(-1.0)
+        }
+        if location.position.x < zero && velocity.velocity.x < zero {
+            game_state.opponent_score += 1;
+            scored.push(entity);
+        }
+        if location.position.x + collision.collision.size.x > GBA_WIDTH.into()
+            && velocity.velocity.x > num!(0.)
+        {
+            game_state.player_score += 1;
+            scored.push(entity);
+        }
+    }
+    // iterator dropped — &World reborrow released, &mut World available again
+    system_ball_scored(world, game_state, balls, game_rng, scored);
+}
+
+fn system_ball_scored(
+    world: &mut World,
+    game_state: &mut GameStateResource,
+    balls: &mut Vec<EntityId>,
+    game_rng: &mut RandomNumberGenerator,
+    scored: Vec<EntityId>,
+) {
+    balls.retain(|b| !scored.contains(b));
+    for ball in scored {
+        world.destroy(&ball);
+        let new_ball = Ball::new(&game_state.spawn, game_rng).create(world);
+        game_state.spawn = game_state.spawn.next();
+        balls.push(new_ball);
+    }
+}
+
 fn clamp_paddle(
     location: &mut LocationComponent,
     velocity: &mut VelocityComponent,
@@ -295,295 +561,6 @@ impl<'g> PongGame<'g> {
             tiles: None,
         }
     }
-
-    fn system_player(&self, time: i32, buttons: &ButtonController) {
-        self.world.with::<(
-            &mut LocationComponent,
-            &mut VelocityComponent,
-            &CollisionComponent,
-        ), _, _>(&self.player, |(mut location, mut velocity, collision)| {
-            match buttons.y_tri() {
-                Tri::Positive => {
-                    let new_velocity = velocity.velocity.y + velocity.acceleration.y * time;
-                    velocity.velocity.y = new_velocity;
-                }
-                Tri::Negative => {
-                    let new_velocity = velocity.velocity.y - velocity.acceleration.y * time;
-                    velocity.velocity.y = new_velocity;
-                }
-                _ => {
-                    let new_velocity = if velocity.velocity.y == num!(0.) {
-                        velocity.velocity.y
-                    } else if velocity.velocity.y > num!(0.) {
-                        velocity.velocity.y - velocity.acceleration.y * time
-                    } else {
-                        velocity.velocity.y + velocity.acceleration.y * time
-                    };
-                    velocity.velocity.y = new_velocity;
-                }
-            };
-            location.position.y += velocity.velocity.y * time;
-            clamp_paddle(&mut location, &mut velocity, &collision);
-        });
-    }
-
-    fn system_cpu_acquire_target(
-        &self,
-        paddle_location: &LocationComponent,
-        time: i32,
-    ) -> (Option<EntityId>, Number) {
-        let balls = self.world.entries::<(
-            EntityId,
-            &LocationComponent,
-            &VelocityComponent,
-            &CollisionComponent,
-        )>(&self.balls);
-
-        // 1. Detect incoming ball(s) moving towards paddle
-        let mut incoming = Vec::<(Number, EntityId, Vector2D<Number>, Vector2D<Number>)>::new();
-        for (entity, location, velocity, collision) in balls {
-            let delta = paddle_location.position.x - location.position.x;
-            let eta = if velocity.velocity.x != num!(0.) {
-                delta / velocity.velocity.x
-            } else {
-                num!(9999.)
-            };
-            if eta > num!(0.) {
-                incoming.push((
-                    eta,
-                    entity,
-                    location.position + collision.collision.size / num!(2.),
-                    velocity.velocity,
-                ))
-            }
-        }
-
-        // Check if incoming balls are suitable targets
-        if incoming.len() > 0 {
-            // FIXME: closest.. that we can reach
-            // Prioritize lowest ETA (mix of fastest, closest)
-            incoming.sort_by(|(a, ..), (b, ..)| a.cmp(b));
-            let (eta, entity, position, velocity) = incoming[0];
-
-            // Ensure ETA is close enough
-            if eta < num!(180.) {
-                return (Some(entity), position.y + velocity.y * time);
-            }
-        }
-
-        // Default case -- move towards middle point
-        let target_y = Number::new(GBA_HEIGHT / 2);
-        (None, target_y)
-    }
-
-    fn system_cpu_track_target(
-        &self,
-        target: EntityId,
-        paddle_location: &LocationComponent,
-        time: i32,
-    ) -> (Option<EntityId>, bool, Number) {
-        // Make sure ball is alive
-        if self.world.is_alive(&target) {
-            // FIXME: find current y position
-            // FIXME: check frames to impact against delta_y distance.. we might not make it!
-            let tracked_duration = self.opponent_state.tracked_duration;
-            let paddle_pos_x = paddle_location.position.x;
-            let result = self.world.with::<(
-                &LocationComponent,
-                &VelocityComponent,
-                &CollisionComponent,
-            ), _, _>(&target, |(ball_location, ball_velocity, ball_collision)| {
-                // Don't get hyper fixated on a target without rescanning
-                if tracked_duration < 60 {
-                    // Confirm it's still moving towards us...
-                    let delta = paddle_pos_x - ball_location.position.x;
-                    if delta * ball_velocity.velocity.x > num!(0.) {
-                        let target_y = ball_location.position.y
-                            + ball_collision.collision.size.y
-                            + ball_velocity.velocity.y * time;
-                        return Some((Some(target), true, target_y));
-                    }
-                }
-                None
-            });
-            if let Some(r) = result {
-                return r;
-            }
-        }
-
-        // If we're here our target is invalid, and we must search again
-        let (new_target, y_target) = self.system_cpu_acquire_target(paddle_location, time);
-        (new_target, false, y_target)
-    }
-
-    fn system_cpu_paddle(&mut self, entity: EntityId, time: i32) {
-        // FIXME: increment opponent logic ~ GameDifficulty
-        // Read paddle state by copy so we don't hold borrows during AI computation
-        let (mut paddle_location, mut paddle_velocity, paddle_collision) =
-            self.world.with::<(
-                &LocationComponent,
-                &VelocityComponent,
-                &CollisionComponent,
-            ), _, _>(&entity, |(loc, vel, coll)| (*loc, *vel, *coll));
-
-        let (target, target_y) = match self.opponent_state.target {
-            Some(target) => {
-                // Track existing target / reacquire
-                let (new_target, tracked, target_y) =
-                    self.system_cpu_track_target(target, &paddle_location, time);
-
-                // Update tracking state
-                if tracked {
-                    self.opponent_state.tracked_duration += 1;
-                } else {
-                    self.opponent_state = OpponentResource::reset(new_target);
-                }
-                (new_target, target_y)
-            }
-            None => {
-                // Find new target
-                self.system_cpu_acquire_target(&paddle_location, time)
-            }
-        };
-        self.opponent_state.target = target;
-
-        let delta_y =
-            target_y - paddle_location.position.y - paddle_collision.collision.size.y / num!(2.);
-
-        let zero = num!(0.);
-        let new_velocity_y = if delta_y < zero {
-            paddle_velocity.velocity.y - paddle_velocity.acceleration.y * time
-        } else if delta_y > zero {
-            paddle_velocity.velocity.y + paddle_velocity.acceleration.y * time
-        } else {
-            0.into()
-        };
-        paddle_velocity.velocity.y = new_velocity_y;
-        paddle_velocity.clamp_velocity(&self.game_state.max_speed);
-
-        // Move min(distance to target, velocity * time)
-        let move_range_y = paddle_velocity.velocity.y * time;
-        let move_y = match delta_y.abs() < move_range_y.abs() {
-            true => delta_y,
-            false => move_range_y,
-        };
-
-        paddle_location.position.y += move_y;
-        clamp_paddle(&mut paddle_location, &mut paddle_velocity, &paddle_collision);
-
-        // Write back modified state
-        self.world.with::<(
-            &mut LocationComponent,
-            &mut VelocityComponent,
-        ), _, _>(&entity, |(mut loc, mut vel)| {
-            *loc = paddle_location;
-            *vel = paddle_velocity;
-        });
-    }
-
-    fn system_balls(&self, time: i32) {
-        let iter = self
-            .world
-            .entries::<(&mut LocationComponent, &VelocityComponent)>(&self.balls);
-        for (mut location, velocity) in iter {
-            location.position += velocity.velocity * time;
-            location.angle += velocity.rotation * time;
-        }
-    }
-
-    fn system_collision(&self, _: i32) {
-        // We're checking intersection based on potential movement, not
-        // trajectory. If entities are moving really fast we might
-        // have them phase through each other, but otherwise this is
-        // a quicker way of checking collisions than continuous collision detection
-
-        let iter = self.world.combinations::<(
-            &mut LocationComponent,
-            &mut VelocityComponent,
-            &CollisionComponent,
-        )>();
-
-        for (
-            (mut location_a, mut velocity_a, collision_a),
-            (mut location_b, mut velocity_b, collision_b),
-        ) in iter
-        {
-            let collision_box_a = collision_a.collision.translate(location_a.position);
-            let collision_box_b = collision_b.collision.translate(location_b.position);
-
-            if let Some(collided) = collision_box_a.separation(&collision_box_b) {
-                // Unstick
-                let inv_masses = collision_a.inv_mass + collision_b.inv_mass;
-                let delta_a = collided.separation * collision_a.inv_mass / inv_masses;
-                let delta_b = collided.separation * collision_b.inv_mass / inv_masses;
-                location_a.position -= delta_a;
-                location_b.position += delta_b;
-
-                // Resolve collision
-                let elasticity = collision_a.bounce.min(collision_b.bounce);
-                let relative_velocity = velocity_a.velocity - velocity_b.velocity;
-                let relative_velocity_norm = relative_velocity.dot(collided.normal);
-
-                // Don't update if already moving away
-                if relative_velocity_norm > num!(0.) {
-                    // FIXME: missing representation of tangent impulse + friction info
-                    let impulse = -(num!(1.) + elasticity) * relative_velocity_norm / inv_masses;
-
-                    velocity_a.velocity += collided.normal * impulse * collision_a.inv_mass;
-                    velocity_b.velocity -= collided.normal * impulse * collision_b.inv_mass;
-
-                    velocity_a.clamp_velocity(&self.game_state.max_speed);
-                    velocity_b.clamp_velocity(&self.game_state.max_speed);
-                }
-            }
-        }
-    }
-
-    fn system_bounds(&mut self, _: i32) {
-        let iter = self.world.entries::<(
-            EntityId,
-            &LocationComponent,
-            &mut VelocityComponent,
-            &CollisionComponent,
-        )>(&self.balls);
-
-        let zero: Number = num!(0.);
-        let mut scored = Vec::<EntityId>::new();
-        for (entity, location, mut velocity, collision) in iter {
-            // Bounce off top/bottom
-            if (location.position.y < zero && velocity.velocity.y < zero)
-                || (location.position.y + collision.collision.size.y > GBA_HEIGHT.into()
-                    && velocity.velocity.y > zero)
-            {
-                velocity.velocity.y *= num!(-1.0)
-            }
-
-            if location.position.x < zero && velocity.velocity.x < zero {
-                self.game_state.opponent_score += 1;
-                scored.push(entity);
-            }
-            if location.position.x + collision.collision.size.x > GBA_WIDTH.into()
-                && velocity.velocity.x > num!(0.)
-            {
-                self.game_state.player_score += 1;
-                scored.push(entity);
-            }
-        }
-
-        self.system_ball_scored(scored);
-    }
-
-    fn system_ball_scored(&mut self, balls: Vec<EntityId>) {
-        self.balls.retain(|b| !balls.contains(b));
-        for ball in balls {
-            self.world.destroy(&ball);
-            let new_ball =
-                Ball::new(&self.game_state.spawn, &mut self.game_rng).create(&mut self.world);
-            self.game_state.spawn = self.game_state.spawn.next();
-            self.balls.push(new_ball);
-        }
-    }
-
     fn renderer_digits(
         &self,
         loader: &mut SpriteLoader,
@@ -645,11 +622,23 @@ impl<'g> Game<'g> for PongGame<'g> {
     }
 
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
-        self.system_player(time, &buttons);
-        self.system_balls(time);
-        self.system_cpu_paddle(self.opponent, time);
-        self.system_collision(time);
-        self.system_bounds(time);
+        system_player(&self.world, self.player, time, buttons);
+        system_balls(&self.world, &self.balls, time);
+        system_cpu_paddle(
+            &self.world,
+            self.opponent,
+            &self.balls,
+            &mut self.opponent_state,
+            &self.game_state,
+            time,
+        );
+        system_collision(&self.world, &self.game_state.max_speed);
+        system_bounds(
+            &mut self.world,
+            &mut self.game_state,
+            &mut self.balls,
+            &mut self.game_rng,
+        );
         self.game_state.game_state()
     }
 
