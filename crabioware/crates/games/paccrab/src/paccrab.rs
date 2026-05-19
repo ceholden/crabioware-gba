@@ -141,51 +141,53 @@ impl<'g> PacCrabGame<'g> {
     fn system_player(&self, _time: i32, buttons: &ButtonController) {
         let level = &self.level;
 
-        let (mut location, mut direction, velocity, collision) =
-            *self.world.entry::<(
-                &mut LocationComponent,
-                &mut DirectionComponent,
-                &VelocityComponent,
-                &CollisionComponent,
-            )>(&self.player);
+        println!("GRABBING COMPONENTS");
+        self.world.with::<(
+            &mut LocationComponent,
+            &mut DirectionComponent,
+            &VelocityComponent,
+            &CollisionComponent,
+        ), _, _>(&self.player, |(mut location, mut direction, velocity, collision)| {
+            println!("GETTING DIRECTION");
+            if buttons.is_pressed(Button::LEFT) {
+                direction.direction = Direction::LEFT;
+            } else if buttons.is_pressed(Button::RIGHT) {
+                direction.direction = Direction::RIGHT;
+            } else if buttons.is_pressed(Button::UP) {
+                direction.direction = Direction::UP;
+            } else if buttons.is_pressed(Button::DOWN) {
+                direction.direction = Direction::DOWN;
+            }
 
-        if buttons.is_pressed(Button::LEFT) {
-            direction.direction = Direction::LEFT;
-        } else if buttons.is_pressed(Button::RIGHT) {
-            direction.direction = Direction::RIGHT;
-        } else if buttons.is_pressed(Button::UP) {
-            direction.direction = Direction::UP;
-        } else if buttons.is_pressed(Button::DOWN) {
-            direction.direction = Direction::DOWN;
-        }
-
-        let coll_rect = collision.collision;
-        match direction.direction {
-            Direction::RIGHT => {
-                let new_x = location.location.x + velocity.velocity.x;
-                if !overlaps_wall(level, new_x, location.location.y, coll_rect) {
-                    location.location.x = new_x;
+            println!("MOVING");
+            let coll_rect = collision.collision;
+            match direction.direction {
+                Direction::RIGHT => {
+                    let new_x = location.location.x + velocity.velocity.x;
+                    if !overlaps_wall(level, new_x, location.location.y, coll_rect) {
+                        location.location.x = new_x;
+                    }
+                }
+                Direction::LEFT => {
+                    let new_x = location.location.x - velocity.velocity.x;
+                    if !overlaps_wall(level, new_x, location.location.y, coll_rect) {
+                        location.location.x = new_x;
+                    }
+                }
+                Direction::UP => {
+                    let new_y = location.location.y - velocity.velocity.y;
+                    if !overlaps_wall(level, location.location.x, new_y, coll_rect) {
+                        location.location.y = new_y;
+                    }
+                }
+                Direction::DOWN => {
+                    let new_y = location.location.y + velocity.velocity.y;
+                    if !overlaps_wall(level, location.location.x, new_y, coll_rect) {
+                        location.location.y = new_y;
+                    }
                 }
             }
-            Direction::LEFT => {
-                let new_x = location.location.x - velocity.velocity.x;
-                if !overlaps_wall(level, new_x, location.location.y, coll_rect) {
-                    location.location.x = new_x;
-                }
-            }
-            Direction::UP => {
-                let new_y = location.location.y - velocity.velocity.y;
-                if !overlaps_wall(level, location.location.x, new_y, coll_rect) {
-                    location.location.y = new_y;
-                }
-            }
-            Direction::DOWN => {
-                let new_y = location.location.y + velocity.velocity.y;
-                if !overlaps_wall(level, location.location.x, new_y, coll_rect) {
-                    location.location.y = new_y;
-                }
-            }
-        }
+        });
     }
 }
 impl<'g> Game<'g> for PacCrabGame<'g> {

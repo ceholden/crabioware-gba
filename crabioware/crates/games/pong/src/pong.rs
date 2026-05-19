@@ -229,6 +229,21 @@ impl Paddle {
     }
 }
 
+fn clamp_paddle(
+    location: &mut LocationComponent,
+    velocity: &mut VelocityComponent,
+    collision: &CollisionComponent,
+) {
+    let zero = num!(0.);
+    if location.position.y < zero {
+        location.position.y = zero;
+        velocity.velocity.y = zero;
+    } else if location.position.y + collision.collision.size.y > GBA_HEIGHT.into() {
+        location.position.y = Number::new(GBA_HEIGHT) - collision.collision.size.y;
+        velocity.velocity.y = zero;
+    }
+}
+
 // TODO: add a "render cache" that helps us disconnect object setup and render
 //       e.g., so we can sort on z-axis or priority
 pub struct PongGame<'g> {
@@ -282,34 +297,34 @@ impl<'g> PongGame<'g> {
     }
 
     fn system_player(&self, time: i32, buttons: &ButtonController) {
-        let (mut location, mut velocity, collision) = *self.world.entry::<(
+        self.world.with::<(
             &mut LocationComponent,
             &mut VelocityComponent,
             &CollisionComponent,
-        )>(&self.player);
-
-        match buttons.y_tri() {
-            Tri::Positive => {
-                let new_velocity = velocity.velocity.y + velocity.acceleration.y * time;
-                velocity.velocity.y = new_velocity;
-            }
-            Tri::Negative => {
-                let new_velocity = velocity.velocity.y - velocity.acceleration.y * time;
-                velocity.velocity.y = new_velocity;
-            }
-            _ => {
-                let new_velocity = if velocity.velocity.y == num!(0.) {
-                    velocity.velocity.y
-                } else if velocity.velocity.y > num!(0.) {
-                    velocity.velocity.y - velocity.acceleration.y * time
-                } else {
-                    velocity.velocity.y + velocity.acceleration.y * time
-                };
-                velocity.velocity.y = new_velocity;
-            }
-        };
-        location.position.y += velocity.velocity.y * time;
-        self.clamp_paddle(&mut location, &mut velocity, &collision);
+        ), _, _>(&self.player, |(mut location, mut velocity, collision)| {
+            match buttons.y_tri() {
+                Tri::Positive => {
+                    let new_velocity = velocity.velocity.y + velocity.acceleration.y * time;
+                    velocity.velocity.y = new_velocity;
+                }
+                Tri::Negative => {
+                    let new_velocity = velocity.velocity.y - velocity.acceleration.y * time;
+                    velocity.velocity.y = new_velocity;
+                }
+                _ => {
+                    let new_velocity = if velocity.velocity.y == num!(0.) {
+                        velocity.velocity.y
+                    } else if velocity.velocity.y > num!(0.) {
+                        velocity.velocity.y - velocity.acceleration.y * time
+                    } else {
+                        velocity.velocity.y + velocity.acceleration.y * time
+                    };
+                    velocity.velocity.y = new_velocity;
+                }
+            };
+            location.position.y += velocity.velocity.y * time;
+            clamp_paddle(&mut location, &mut velocity, &collision);
+        });
     }
 
     fn system_cpu_acquire_target(
@@ -370,54 +385,60 @@ impl<'g> PongGame<'g> {
         // Make sure ball is alive
         if self.world.is_alive(&target) {
             // FIXME: find current y position
-            let (ball_location, ball_velocity, ball_collision) = *self.world.entry::<(
-                &mut LocationComponent,
-                &mut VelocityComponent,
-                &CollisionComponent,
-            )>(&target);
-
             // FIXME: check frames to impact against delta_y distance.. we might not make it!
-
-            // Don't get hyper fixated no a target without rescanning
-            if self.opponent_state.tracked_duration < 60 {
-                // Confirm it's still moving towards us...
-                let delta = paddle_location.position.x - ball_location.position.x;
-                if delta * ball_velocity.velocity.x > num!(0.) {
-                    let target_y = ball_location.position.y
-                        + ball_collision.collision.size.y
-                        + ball_velocity.velocity.y * time;
-                    return (Some(target), true, target_y);
+            let tracked_duration = self.opponent_state.tracked_duration;
+            let paddle_pos_x = paddle_location.position.x;
+            let result = self.world.with::<(
+                &LocationComponent,
+                &VelocityComponent,
+                &CollisionComponent,
+            ), _, _>(&target, |(ball_location, ball_velocity, ball_collision)| {
+                // Don't get hyper fixated on a target without rescanning
+                if tracked_duration < 60 {
+                    // Confirm it's still moving towards us...
+                    let delta = paddle_pos_x - ball_location.position.x;
+                    if delta * ball_velocity.velocity.x > num!(0.) {
+                        let target_y = ball_location.position.y
+                            + ball_collision.collision.size.y
+                            + ball_velocity.velocity.y * time;
+                        return Some((Some(target), true, target_y));
+                    }
                 }
+                None
+            });
+            if let Some(r) = result {
+                return r;
             }
         }
 
         // If we're here our target is invalid, and we must search again
-        let (target, y_target) = self.system_cpu_acquire_target(paddle_location, time);
-        (target, false, y_target)
+        let (new_target, y_target) = self.system_cpu_acquire_target(paddle_location, time);
+        (new_target, false, y_target)
     }
 
     fn system_cpu_paddle(&mut self, entity: EntityId, time: i32) {
         // FIXME: increment opponent logic ~ GameDifficulty
+        // Read paddle state by copy so we don't hold borrows during AI computation
         let (mut paddle_location, mut paddle_velocity, paddle_collision) =
-            *self.world.entry::<(
-                &mut LocationComponent,
-                &mut VelocityComponent,
+            self.world.with::<(
+                &LocationComponent,
+                &VelocityComponent,
                 &CollisionComponent,
-            )>(&entity);
+            ), _, _>(&entity, |(loc, vel, coll)| (*loc, *vel, *coll));
 
         let (target, target_y) = match self.opponent_state.target {
             Some(target) => {
                 // Track existing target / reacquire
-                let (target, tracked, target_y) =
+                let (new_target, tracked, target_y) =
                     self.system_cpu_track_target(target, &paddle_location, time);
 
                 // Update tracking state
                 if tracked {
                     self.opponent_state.tracked_duration += 1;
                 } else {
-                    self.opponent_state = OpponentResource::reset(target);
+                    self.opponent_state = OpponentResource::reset(new_target);
                 }
-                (target, target_y)
+                (new_target, target_y)
             }
             None => {
                 // Find new target
@@ -448,27 +469,16 @@ impl<'g> PongGame<'g> {
         };
 
         paddle_location.position.y += move_y;
-        self.clamp_paddle(
-            &mut paddle_location,
-            &mut paddle_velocity,
-            &paddle_collision,
-        );
-    }
+        clamp_paddle(&mut paddle_location, &mut paddle_velocity, &paddle_collision);
 
-    fn clamp_paddle(
-        &self,
-        location: &mut LocationComponent,
-        velocity: &mut VelocityComponent,
-        collision: &CollisionComponent,
-    ) {
-        let zero = num!(0.);
-        if location.position.y < zero {
-            location.position.y = zero;
-            velocity.velocity.y = zero;
-        } else if location.position.y + collision.collision.size.y > GBA_HEIGHT.into() {
-            location.position.y = Number::new(GBA_HEIGHT) - collision.collision.size.y;
-            velocity.velocity.y = zero;
-        }
+        // Write back modified state
+        self.world.with::<(
+            &mut LocationComponent,
+            &mut VelocityComponent,
+        ), _, _>(&entity, |(mut loc, mut vel)| {
+            *loc = paddle_location;
+            *vel = paddle_velocity;
+        });
     }
 
     fn system_balls(&self, time: i32) {
