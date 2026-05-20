@@ -5,9 +5,11 @@
 #![cfg_attr(test, test_runner(agb::test_runner::test_runner))]
 extern crate alloc;
 
+mod ai;
 mod components;
 mod graphics;
 mod levels;
+mod movement;
 mod paccrab;
 pub use paccrab::PacCrabGame;
 
