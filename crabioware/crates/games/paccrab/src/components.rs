@@ -1,6 +1,6 @@
 use agb::fixnum::Vector2D;
 use crabioware_core::ecs::Component;
-use crabioware_core::types::{Number, Rect};
+use crabioware_core::types::Number;
 
 use super::graphics::SpriteTag;
 
@@ -17,18 +17,28 @@ pub enum Direction {
     LEFT,
     RIGHT,
 }
+impl Direction {
+    pub fn opposite(self) -> Self {
+        match self {
+            Direction::UP => Direction::DOWN,
+            Direction::DOWN => Direction::UP,
+            Direction::LEFT => Direction::RIGHT,
+            Direction::RIGHT => Direction::LEFT,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DirectionComponent {
     pub direction: Direction,
+    pub desired: Direction,
 }
 impl Component for DirectionComponent {}
 
-#[derive(Clone, Copy, Default)]
-pub struct VelocityComponent {
-    pub velocity: Vector2D<Number>,
+#[derive(Clone, Copy)]
+pub struct SpeedComponent(pub Number);
+impl Component for SpeedComponent {
 }
-impl Component for VelocityComponent {}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct CollisionComponent {
