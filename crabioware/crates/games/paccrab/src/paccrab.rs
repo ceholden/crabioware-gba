@@ -11,8 +11,9 @@ use crabioware_core::games::{Game, GameDifficulty, GameState, Games};
 use crabioware_core::graphics::{GraphicsResource, Mode0TileMap, TileMapResource, TileMode};
 use crabioware_core::types::Number;
 
+use super::ai::ghost_desired;
 use super::components::{
-    Direction, DirectionComponent, LocationComponent, PlayerComponent,
+    Direction, DirectionComponent, GhostComponent, GhostKind, LocationComponent, PlayerComponent,
     SpeedComponent, SpriteComponent,
 };
 use super::graphics::SpriteTag;
@@ -22,13 +23,21 @@ use super::movement::{apply_movement, tile_of};
 fn spawn_crab(world: &mut World, x: Number, y: Number) -> EntityId {
     world
         .create()
-        .with(LocationComponent { location: Vector2D { x, y } })
-        .with(DirectionComponent { direction: Direction::RIGHT, desired: Direction::RIGHT })
+        .with(LocationComponent {
+            location: Vector2D { x, y },
+        })
+        .with(DirectionComponent {
+            direction: Direction::RIGHT,
+            desired: Direction::RIGHT,
+        })
         .with(SpeedComponent(num!(0.5)))
         .with(PlayerComponent)
         .with(SpriteComponent {
             tag: SpriteTag::Crab,
-            offset: Vector2D { x: (-4).into(), y: (-4).into() },
+            offset: Vector2D {
+                x: (-4).into(),
+                y: (-4).into(),
+            },
             frame: 0,
         })
         .build()
@@ -40,21 +49,20 @@ fn render_tiles(level: &Level, bg1: &mut MapLoan<'_, RegularMap>, vram: &mut VRa
     let tileset = level.get_tileset();
     for y in 0..level.dimensions.y as u16 {
         for x in 0..level.dimensions.x as u16 {
-            let tile_id =
-                level.walls[(y as u32 * level.dimensions.x + x as u32) as usize] - 1;
-            bg1.set_tile(vram, (x, y), &tileset, level.get_tilesetting(tile_id as usize));
+            let tile_id = level.walls[(y as u32 * level.dimensions.x + x as u32) as usize] - 1;
+            bg1.set_tile(
+                vram,
+                (x, y),
+                &tileset,
+                level.get_tilesetting(tile_id as usize),
+            );
         }
     }
     bg1.commit(vram);
     bg1.set_visible(true);
 }
 
-fn system_player(
-    world: &World,
-    player: &EntityId,
-    level: &Level,
-    buttons: &ButtonController,
-) {
+fn system_player(world: &World, player: &EntityId, level: &Level, buttons: &ButtonController) {
     world.with::<(
         &mut LocationComponent,
         &mut DirectionComponent,
@@ -91,8 +99,10 @@ impl<'g> PacCrabGame<'g> {
         world.register_component::<SpriteComponent>();
 
         let game_rng = RandomNumberGenerator::new_with_seed([
-            rng.gen().abs() as u32, rng.gen().abs() as u32,
-            rng.gen().abs() as u32, rng.gen().abs() as u32,
+            rng.gen().abs() as u32,
+            rng.gen().abs() as u32,
+            rng.gen().abs() as u32,
+            rng.gen().abs() as u32,
         ]);
 
         let level = Levels::LEVEL_1.get_level();
@@ -140,11 +150,18 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
         self.time += time;
 
         // Snapshot player tile position for ghost AI before running player system
-        let (player_tx, player_ty, player_dir) = self.world.with::<
-            (&LocationComponent, &DirectionComponent), _, _,
-        >(&self.player, |(loc, dir)| {
-            (tile_of(loc.location.x), tile_of(loc.location.y), dir.direction)
-        });
+        let (player_tx, player_ty, player_dir) =
+            self.world
+                .with::<(&LocationComponent, &DirectionComponent), _, _>(
+                    &self.player,
+                    |(loc, dir)| {
+                        (
+                            tile_of(loc.location.x),
+                            tile_of(loc.location.y),
+                            dir.direction,
+                        )
+                    },
+                );
 
         system_player(&self.world, &self.player, &self.level, buttons);
 
