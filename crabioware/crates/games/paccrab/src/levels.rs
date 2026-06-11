@@ -38,7 +38,8 @@ impl Level {
         {
             return false;
         }
-        self.path[(tile_y * self.dimensions.x as i32 + tile_x) as usize] != 1
+        self.path[(tile_y * self.dimensions.x as i32 + tile_x) as usize]
+            == tilemaps::tilemap::PATH as u8
     }
 }
 
