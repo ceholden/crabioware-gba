@@ -42,7 +42,7 @@ pub(crate) fn open_neighbors<F>(
     fn_walkable: F,
 ) -> [Option<Direction>; 4]
 where
-    F: Fn(i32, i32) -> bool
+    F: Fn(i32, i32) -> bool,
 {
     let mut result = [None; 4];
     let mut i = 0;
@@ -80,9 +80,8 @@ pub(crate) fn apply_movement<F>(
     direction: &mut DirectionComponent,
     speed: Number,
     fn_walkable: F,
-)
-where
-    F: Fn(i32, i32) -> bool
+) where
+    F: Fn(i32, i32) -> bool,
 {
     // Nudge perpendicular axis toward tile center
     match direction.direction {
