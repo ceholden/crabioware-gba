@@ -286,7 +286,6 @@ impl<'g> SnakeGame<'g> {
             tiles: None,
         }
     }
-
 }
 impl<'g> Game<'g> for SnakeGame<'g> {
     fn renderer(&self) -> TileMode {

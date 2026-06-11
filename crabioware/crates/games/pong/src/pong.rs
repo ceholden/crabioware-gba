@@ -321,23 +321,23 @@ fn system_cpu_track_target(
     if world.is_alive(&target) {
         // FIXME: check frames to impact against delta_y distance.. we might not make it!
         let paddle_pos_x = paddle_location.position.x;
-        let result = world.with::<(
-            &LocationComponent,
-            &VelocityComponent,
-            &CollisionComponent,
-        ), _, _>(&target, |(ball_location, ball_velocity, ball_collision)| {
-            // Don't get hyper fixated on a target without rescanning
-            if tracked_duration < 60 {
-                let delta = paddle_pos_x - ball_location.position.x;
-                if delta * ball_velocity.velocity.x > num!(0.) {
-                    let target_y = ball_location.position.y
-                        + ball_collision.collision.size.y
-                        + ball_velocity.velocity.y * time;
-                    return Some((Some(target), true, target_y));
-                }
-            }
-            None
-        });
+        let result = world
+            .with::<(&LocationComponent, &VelocityComponent, &CollisionComponent), _, _>(
+                &target,
+                |(ball_location, ball_velocity, ball_collision)| {
+                    // Don't get hyper fixated on a target without rescanning
+                    if tracked_duration < 60 {
+                        let delta = paddle_pos_x - ball_location.position.x;
+                        if delta * ball_velocity.velocity.x > num!(0.) {
+                            let target_y = ball_location.position.y
+                                + ball_collision.collision.size.y
+                                + ball_velocity.velocity.y * time;
+                            return Some((Some(target), true, target_y));
+                        }
+                    }
+                    None
+                },
+            );
         if let Some(r) = result {
             return r;
         }
@@ -381,8 +381,7 @@ fn system_cpu_paddle(
         };
         opponent_state.target = target;
 
-        let delta_y =
-            target_y - location.position.y - collision.collision.size.y / num!(2.);
+        let delta_y = target_y - location.position.y - collision.collision.size.y / num!(2.);
         let zero = num!(0.);
         let new_velocity_y = if delta_y < zero {
             velocity.velocity.y - velocity.acceleration.y * time

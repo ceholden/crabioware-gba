@@ -43,7 +43,12 @@ pub(crate) fn open_neighbors(
 ) -> [Option<Direction>; 4] {
     let mut result = [None; 4];
     let mut i = 0;
-    for d in [Direction::RIGHT, Direction::LEFT, Direction::UP, Direction::DOWN] {
+    for d in [
+        Direction::RIGHT,
+        Direction::LEFT,
+        Direction::UP,
+        Direction::DOWN,
+    ] {
         if d == exclude {
             continue;
         }
@@ -94,10 +99,11 @@ pub(crate) fn apply_movement(
     let current = direction.direction;
     if desired != current {
         let is_uturn = desired == current.opposite();
-        let aligned = is_uturn || match desired {
-            Direction::LEFT | Direction::RIGHT => aligned_for_turn(location.location.y, speed),
-            Direction::UP | Direction::DOWN => aligned_for_turn(location.location.x, speed),
-        };
+        let aligned = is_uturn
+            || match desired {
+                Direction::LEFT | Direction::RIGHT => aligned_for_turn(location.location.y, speed),
+                Direction::UP | Direction::DOWN => aligned_for_turn(location.location.x, speed),
+            };
         if aligned {
             let tile_open = match desired {
                 Direction::RIGHT => level.is_walkable_tile(tx + 1, ty),
