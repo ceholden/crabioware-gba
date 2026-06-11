@@ -11,6 +11,7 @@ mod graphics;
 mod levels;
 mod movement;
 mod paccrab;
+mod systems;
 pub use paccrab::PacCrabGame;
 
 #[cfg(test)]
