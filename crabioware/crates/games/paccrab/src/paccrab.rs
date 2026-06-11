@@ -42,6 +42,41 @@ fn spawn_crab(world: &mut World, x: Number, y: Number) -> EntityId {
         })
         .build()
 }
+
+fn spawn_ghost(
+    world: &mut World,
+    x: Number,
+    y: Number,
+    kind: GhostKind,
+    start_dir: Direction,
+    scatter_tx: i32,
+    scatter_ty: i32,
+    tag: SpriteTag,
+) -> EntityId {
+    world
+        .create()
+        .with(LocationComponent {
+            location: Vector2D { x, y },
+        })
+        .with(DirectionComponent {
+            direction: start_dir,
+            desired: start_dir,
+        })
+        .with(SpeedComponent(num!(0.5)))
+        .with(GhostComponent {
+            kind,
+            scatter_tx,
+            scatter_ty,
+        })
+        .with(SpriteComponent {
+            tag,
+            offset: Vector2D {
+                x: (-4).into(),
+                y: (-4).into(),
+            },
+            frame: 0,
+        })
+        .build()
 }
 
 fn render_tiles(level: &Level, bg1: &mut MapLoan<'_, RegularMap>, vram: &mut VRamManager) {
@@ -82,9 +117,47 @@ fn system_player(world: &World, player: &EntityId, level: &Level, buttons: &Butt
     });
 }
 
+fn system_ghost(
+    world: &World,
+    ghosts: &[EntityId],
+    level: &Level,
+    player_tx: i32,
+    player_ty: i32,
+    player_dir: Direction,
+    rng: &mut RandomNumberGenerator,
+) {
+    for ghost in ghosts {
+        world.with::<(
+            &mut LocationComponent,
+            &mut DirectionComponent,
+            &SpeedComponent,
+            &mut GhostComponent,
+        ), _, _>(
+            ghost,
+            |(mut location, mut direction, speed, mut ghost_comp)| {
+                let tx = tile_of(location.location.x);
+                let ty = tile_of(location.location.y);
+                direction.desired = ghost_desired(
+                    &mut ghost_comp,
+                    tx,
+                    ty,
+                    direction.direction,
+                    player_tx,
+                    player_ty,
+                    player_dir,
+                    level,
+                    rng,
+                );
+                apply_movement(&mut location, &mut direction, speed.0, level);
+            },
+        );
+    }
+}
+
 pub struct PacCrabGame<'g> {
     world: World,
     player: EntityId,
+    ghosts: Vec<EntityId>,
     rng: RandomNumberGenerator,
     time: i32,
     level: Level,
@@ -96,6 +169,8 @@ impl<'g> PacCrabGame<'g> {
         world.register_component::<LocationComponent>();
         world.register_component::<DirectionComponent>();
         world.register_component::<SpeedComponent>();
+        world.register_component::<PlayerComponent>();
+        world.register_component::<GhostComponent>();
         world.register_component::<SpriteComponent>();
 
         let game_rng = RandomNumberGenerator::new_with_seed([
@@ -112,9 +187,56 @@ impl<'g> PacCrabGame<'g> {
             Number::new(level.spawn.1),
         );
 
+        // TODO: exit gate and logic
+        let ghosts: Vec<EntityId> = level
+            .ghosts
+            .iter()
+            .zip([
+                (
+                    GhostKind::Patrol {
+                        chase_ticks: 120,
+                        shy_ticks: 60,
+                        timer: 0,
+                        chasing: false,
+                    },
+                    Direction::UP,
+                    1,
+                    1,
+                    SpriteTag::GhostPink,
+                ),
+                (
+                    GhostKind::Ambush,
+                    Direction::UP,
+                    28,
+                    1,
+                    SpriteTag::GhostYellow,
+                ),
+                (
+                    GhostKind::Random,
+                    Direction::UP,
+                    1,
+                    18,
+                    SpriteTag::GhostBlue,
+                ),
+            ])
+            .map(|(&(x, y), (kind, dir, stx, sty, tag))| {
+                spawn_ghost(
+                    &mut world,
+                    Number::new(x),
+                    Number::new(y),
+                    kind,
+                    dir,
+                    stx,
+                    sty,
+                    tag,
+                )
+            })
+            .collect();
+
         Self {
             world,
             player,
+            ghosts,
             rng: game_rng,
             time: 0,
             level,
@@ -164,6 +286,15 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
                 );
 
         system_player(&self.world, &self.player, &self.level, buttons);
+        system_ghost(
+            &self.world,
+            &self.ghosts,
+            &self.level,
+            player_tx,
+            player_ty,
+            player_dir,
+            &mut self.rng,
+        );
 
         // FIXME: this is not a good exit condition
         if buttons.is_just_pressed(Button::SELECT) {
