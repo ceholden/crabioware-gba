@@ -30,16 +30,40 @@ impl Level {
         vram.set_background_palettes(tile_sheet::PALETTES);
     }
 
+    /// Are we inside the level?
+    fn in_level(&self, tile_x: i32, tile_y: i32) -> bool {
+        tile_x >= 0
+            && tile_y >= 0
+            && tile_x < self.dimensions.x as i32
+            && tile_y < self.dimensions.y as i32
+    }
+
+    /// Is this the door to the ghost house?
+    fn is_door_tile(&self, tile_x: i32, tile_y: i32) -> bool {
+        self.doors
+            .iter()
+            .any(|&(px, py)| px / TILE_SIZE == tile_x && py / TILE_SIZE == tile_y)
+    }
+
+    /// Are we inside the ghost house?
+    fn is_ghost_house_tile(&self, tile_x: i32, tile_y: i32) -> bool {
+        self.in_level(tile_x, tile_y)
+            && self.path[(tile_y * self.dimensions.x as i32 + tile_x) as usize]
+                == tilemaps::tilemap::GHOST as u8
+    }
+
+    /// Can the player walk on this tile?
     pub fn is_walkable_tile(&self, tile_x: i32, tile_y: i32) -> bool {
-        if tile_x < 0
-            || tile_y < 0
-            || tile_x >= self.dimensions.x as i32
-            || tile_y >= self.dimensions.y as i32
-        {
-            return false;
-        }
-        self.path[(tile_y * self.dimensions.x as i32 + tile_x) as usize]
-            == tilemaps::tilemap::PATH as u8
+        self.in_level(tile_x, tile_y)
+            && self.path[(tile_y * self.dimensions.x as i32 + tile_x) as usize]
+                == tilemaps::tilemap::PATH as u8
+    }
+
+    /// Can ghosts walk on this tile (they're allowed in the house)
+    pub fn is_ghost_walkable_tile(&self, tile_x: i32, tile_y: i32) -> bool {
+        self.is_walkable_tile(tile_x, tile_y)
+            || self.is_door_tile(tile_x, tile_y)
+            || self.is_ghost_house_tile(tile_x, tile_y)
     }
 }
 
