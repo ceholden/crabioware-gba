@@ -37,14 +37,36 @@ impl Component for DirectionComponent {}
 
 #[derive(Clone, Copy)]
 pub struct SpeedComponent(pub Number);
-impl Component for SpeedComponent {
+impl Component for SpeedComponent {}
+
+/// Marker for the player entity; used by collision and rendering systems to distinguish the crab from ghosts.
+#[derive(Clone, Copy)]
+pub struct PlayerComponent;
+impl Component for PlayerComponent {}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GhostKind {
+    Chase,  // always targets player's current tile (Blinky)
+    Ambush, // targets N tiles ahead of player's direction (Pinky)
+    Shy,    // chases when far, scatters to corner when close (Clyde)
+    Random, // picks a random valid direction at each intersection
+    /// Alternates between chasing and scattering on a fixed timer.
+    Patrol {
+        chase_ticks: u32,
+        shy_ticks: u32,
+        timer: u32,
+        chasing: bool,
+    },
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct CollisionComponent {
-    pub collision: Rect<Number>,
+#[derive(Clone, Copy, Debug)]
+pub struct GhostComponent {
+    pub kind: GhostKind,
+    // Patrol and Shy ghosts will scatter
+    pub scatter_tx: i32,
+    pub scatter_ty: i32,
 }
-impl Component for CollisionComponent {}
+impl Component for GhostComponent {}
 
 #[derive(Clone, Copy, Debug)]
 pub struct SpriteComponent {
