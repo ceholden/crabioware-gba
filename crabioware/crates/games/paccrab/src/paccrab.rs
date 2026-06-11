@@ -11,6 +11,8 @@ use crabioware_core::games::{Game, GameDifficulty, GameState, Games};
 use crabioware_core::graphics::{GraphicsResource, Mode0TileMap, TileMapResource, TileMode};
 use crabioware_core::types::Number;
 
+use crate::systems::system_collision;
+
 use super::components::{
     Direction, DirectionComponent, GhostComponent, GhostKind, LocationComponent, PlayerComponent,
     SpeedComponent, SpriteComponent,
@@ -96,7 +98,6 @@ fn render_tiles(level: &Level, bg1: &mut MapLoan<'_, RegularMap>, vram: &mut VRa
     bg1.commit(vram);
     bg1.set_visible(true);
 }
-
 
 pub struct PacCrabGame<'g> {
     world: World,
@@ -239,13 +240,7 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
             player_dir,
             &mut self.rng,
         );
-
-        // FIXME: this is not a good exit condition
-        if buttons.is_just_pressed(Button::SELECT) {
-            GameState::GameOver
-        } else {
-            GameState::Running(Games::PacCrab)
-        }
+        system_collision(&self.world, &self.player, &self.ghosts)
     }
 
     fn render(

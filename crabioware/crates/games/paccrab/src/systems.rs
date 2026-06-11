@@ -1,6 +1,7 @@
 use agb::input::{Button, ButtonController};
 use agb::rng::RandomNumberGenerator;
 use crabioware_core::ecs::{EntityId, World};
+use crabioware_core::games::{GameState, Games};
 
 use super::ai::ghost_desired;
 use super::components::{
@@ -30,12 +31,9 @@ pub(crate) fn system_player(
             direction.desired = Direction::DOWN;
         }
 
-        apply_movement(
-            &mut location,
-            &mut direction,
-            speed.0,
-            |tile_x, tile_y| level.is_walkable_tile(tile_x, tile_y),
-        );
+        apply_movement(&mut location, &mut direction, speed.0, |tile_x, tile_y| {
+            level.is_walkable_tile(tile_x, tile_y)
+        });
     });
 }
 
@@ -70,13 +68,31 @@ pub(crate) fn system_ghost(
                     level,
                     rng,
                 );
-                apply_movement(
-                    &mut location,
-                    &mut direction,
-                    speed.0,
-                    |tile_x, tile_y| level.is_ghost_walkable_tile(tile_x, tile_y),
-                );
+                // FIXME: ghosts shouldn't move into house _after_ first exit
+                apply_movement(&mut location, &mut direction, speed.0, |tile_x, tile_y| {
+                    level.is_ghost_walkable_tile(tile_x, tile_y)
+                });
             },
         );
+    }
+}
+
+pub(crate) fn system_collision(world: &World, player: &EntityId, ghosts: &[EntityId]) -> GameState {
+    let (player_tx, player_ty) = world.with::<(&LocationComponent,), _, _>(player, |(loc,)| {
+        (tile_of(loc.location.x), tile_of(loc.location.y))
+    });
+
+    let collided = ghosts.iter().any(|ghost| {
+        world.with::<(&LocationComponent,), _, _>(ghost, |(loc,)| {
+            tile_of(loc.location.x) == player_tx && tile_of(loc.location.y) == player_ty
+        })
+    });
+
+    // FIXME: check player's state after implementing power pellet
+
+    if collided {
+        GameState::GameOver
+    } else {
+        GameState::Running(Games::PacCrab)
     }
 }
