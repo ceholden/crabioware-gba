@@ -6,10 +6,11 @@ const LEVELS: &[&str] = &["assets/maps/level-1.json"];
 fn main() {
     let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR environment variable must be specified");
 
-    tiled_export::export_tilemap(&out_dir, "assets/tilemap.json")
+    let tile_types = tiled_export::export_tilemap(&out_dir, "assets/tilemap.json")
         .expect("Failed to export tilemap");
     for &level in LEVELS {
-        tiled_export::export_level(&out_dir, Path::new(level)).expect("Failed to export level");
+        tiled_export::export_level(&out_dir, Path::new(level), &tile_types)
+            .expect("Failed to export level");
     }
 }
 
@@ -24,7 +25,8 @@ mod tiled_export {
     use itertools::Itertools;
     use serde::Deserialize;
 
-    pub fn export_tilemap(out_dir: &str, tilemap: &str) -> std::io::Result<()> {
+    /// Export a mapping of tile_id (0 based) to type index
+    pub fn export_tilemap(out_dir: &str, tilemap: &str) -> std::io::Result<HashMap<i32, usize>> {
         // println!("cargo:rerun-if-changed={tilemap}");
         let file = File::open(tilemap)?;
         let reader = BufReader::new(file);
@@ -44,10 +46,10 @@ mod tiled_export {
             tile_ids_to_types.insert(tile.id, tile_type);
         }
 
-        let tile_types_to_ids: HashMap<_, _> = tile_types
+        let tile_types_to_ids: HashMap<&str, usize> = tile_types
             .iter()
             .enumerate()
-            .map(|(idx, tile_type)| (tile_type, idx))
+            .map(|(idx, &tile_type)| (tile_type, idx))
             .collect();
 
         let tile_info = (0..tilemap.tilecount)
@@ -72,10 +74,18 @@ mod tiled_export {
         }
         writeln!(&mut writer, "pub const TILE_DATA: &[u32] = &[{tile_info}];")?;
 
-        Ok(())
+        let type_map = tile_ids_to_types
+            .iter()
+            .map(|(&id, ty)| (id, *tile_types_to_ids.get(ty).unwrap()))
+            .collect();
+        Ok(type_map)
     }
 
-    pub fn export_level(out_dir: &str, level_file: &Path) -> std::io::Result<()> {
+    pub fn export_level(
+        out_dir: &str,
+        level_file: &Path,
+        tile_types: &HashMap<i32, usize>,
+    ) -> std::io::Result<()> {
         // println!("cargo:rerun-if-changed={level_file:?}");
         let file = File::open(level_file).expect("Cannot read level file {level_file}");
         let reader = BufReader::new(file);
@@ -99,7 +109,19 @@ mod tiled_export {
                         .as_ref()
                         .unwrap()
                         .iter()
-                        .map(|id| id.to_string())
+                        .map(|&gid| {
+                            if layer.name == "Path" {
+                                // Remap GIDs to tile type indices so runtime check is `== PATH`
+                                if gid == 0 {
+                                    0
+                                } else {
+                                    *tile_types.get(&(gid - 1)).unwrap_or(&0)
+                                }
+                            } else {
+                                gid as usize
+                            }
+                        })
+                        .map(|t| t.to_string())
                         .collect::<Vec<String>>()
                         .join(", "),
                 )
