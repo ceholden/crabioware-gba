@@ -113,7 +113,12 @@ fn system_player(world: &World, player: &EntityId, level: &Level, buttons: &Butt
             direction.desired = Direction::DOWN;
         }
 
-        apply_movement(&mut location, &mut direction, speed.0, level);
+        apply_movement(
+            &mut location,
+            &mut direction,
+            speed.0,
+            |tile_x, tile_y| level.is_walkable_tile(tile_x, tile_y),
+        );
     });
 }
 
@@ -148,7 +153,12 @@ fn system_ghost(
                     level,
                     rng,
                 );
-                apply_movement(&mut location, &mut direction, speed.0, level);
+                apply_movement(
+                    &mut location,
+                    &mut direction,
+                    speed.0,
+                    |tile_x, tile_y| level.is_ghost_walkable_tile(tile_x, tile_y),
+                );
             },
         );
     }

@@ -19,7 +19,9 @@ pub(crate) fn ghost_desired(
 ) -> Direction {
     let scatter_tx = ghost_comp.scatter_tx;
     let scatter_ty = ghost_comp.scatter_ty;
-    let neighbors = open_neighbors(level, ghost_tx, ghost_ty, current.opposite());
+    let neighbors = open_neighbors(ghost_tx, ghost_ty, current.opposite(), |tile_x, tile_y| {
+        level.is_ghost_walkable_tile(tile_x, tile_y)
+    });
     match &mut ghost_comp.kind {
         GhostKind::Chase => toward(neighbors, ghost_tx, ghost_ty, player_tx, player_ty, current),
         GhostKind::Ambush => {

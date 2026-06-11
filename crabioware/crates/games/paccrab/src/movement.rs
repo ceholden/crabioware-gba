@@ -35,12 +35,15 @@ pub(crate) fn aligned_for_turn(pos: Number, speed: Number) -> bool {
 /// Walkable neighbors of tile `(tx, ty)`, omitting `exclude` (the direction
 /// the entity came from).  Returns a fixed-size array; iterate with
 /// `.into_iter().flatten()`.
-pub(crate) fn open_neighbors(
-    level: &Level,
+pub(crate) fn open_neighbors<F>(
     tx: i32,
     ty: i32,
     exclude: Direction,
-) -> [Option<Direction>; 4] {
+    fn_walkable: F,
+) -> [Option<Direction>; 4]
+where
+    F: Fn(i32, i32) -> bool
+{
     let mut result = [None; 4];
     let mut i = 0;
     for d in [
@@ -53,10 +56,10 @@ pub(crate) fn open_neighbors(
             continue;
         }
         let open = match d {
-            Direction::RIGHT => level.is_walkable_tile(tx + 1, ty),
-            Direction::LEFT => level.is_walkable_tile(tx - 1, ty),
-            Direction::UP => level.is_walkable_tile(tx, ty - 1),
-            Direction::DOWN => level.is_walkable_tile(tx, ty + 1),
+            Direction::RIGHT => fn_walkable(tx + 1, ty),
+            Direction::LEFT => fn_walkable(tx - 1, ty),
+            Direction::UP => fn_walkable(tx, ty - 1),
+            Direction::DOWN => fn_walkable(tx, ty + 1),
         };
         if open {
             result[i] = Some(d);
@@ -72,12 +75,15 @@ pub(crate) fn open_neighbors(
 /// - nudges the perpendicular axis toward the tile center
 /// - commits the buffered turn when aligned and the target tile is open
 /// - advances along the current direction, stopping cleanly at tile centers
-pub(crate) fn apply_movement(
+pub(crate) fn apply_movement<F>(
     location: &mut LocationComponent,
     direction: &mut DirectionComponent,
     speed: Number,
-    level: &Level,
-) {
+    fn_walkable: F,
+)
+where
+    F: Fn(i32, i32) -> bool
+{
     // Nudge perpendicular axis toward tile center
     match direction.direction {
         Direction::LEFT | Direction::RIGHT => {
@@ -106,10 +112,10 @@ pub(crate) fn apply_movement(
             };
         if aligned {
             let tile_open = match desired {
-                Direction::RIGHT => level.is_walkable_tile(tx + 1, ty),
-                Direction::LEFT => level.is_walkable_tile(tx - 1, ty),
-                Direction::UP => level.is_walkable_tile(tx, ty - 1),
-                Direction::DOWN => level.is_walkable_tile(tx, ty + 1),
+                Direction::RIGHT => fn_walkable(tx + 1, ty),
+                Direction::LEFT => fn_walkable(tx - 1, ty),
+                Direction::UP => fn_walkable(tx, ty - 1),
+                Direction::DOWN => fn_walkable(tx, ty + 1),
             };
             if tile_open || is_uturn {
                 match desired {
@@ -129,7 +135,7 @@ pub(crate) fn apply_movement(
             let nx = x + speed;
             if x < cx {
                 location.location.x = if nx < cx { nx } else { cx };
-            } else if level.is_walkable_tile(tx + 1, ty) {
+            } else if fn_walkable(tx + 1, ty) {
                 location.location.x = nx;
             } else {
                 location.location.x = cx;
@@ -139,7 +145,7 @@ pub(crate) fn apply_movement(
             let nx = x - speed;
             if x > cx {
                 location.location.x = if nx > cx { nx } else { cx };
-            } else if level.is_walkable_tile(tx - 1, ty) {
+            } else if fn_walkable(tx - 1, ty) {
                 location.location.x = nx;
             } else {
                 location.location.x = cx;
@@ -149,7 +155,7 @@ pub(crate) fn apply_movement(
             let ny = y - speed;
             if y > cy {
                 location.location.y = if ny > cy { ny } else { cy };
-            } else if level.is_walkable_tile(tx, ty - 1) {
+            } else if fn_walkable(tx, ty - 1) {
                 location.location.y = ny;
             } else {
                 location.location.y = cy;
@@ -159,7 +165,7 @@ pub(crate) fn apply_movement(
             let ny = y + speed;
             if y < cy {
                 location.location.y = if ny < cy { ny } else { cy };
-            } else if level.is_walkable_tile(tx, ty + 1) {
+            } else if fn_walkable(tx, ty + 1) {
                 location.location.y = ny;
             } else {
                 location.location.y = cy;
