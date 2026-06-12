@@ -1,5 +1,8 @@
 use std::path::Path;
 
+// Remap GID for these layers
+const REMAPPED_LAYERS: &[&str] = &["Path", "Dots"];
+
 // Build Tiled map export JSON into Rust modules we can use
 const LEVELS: &[&str] = &["assets/maps/level-1.json"];
 
@@ -17,6 +20,8 @@ fn main() {
 // TODO: We can use tiled crate to better handle tmx files..
 //          In particular this would be useful for handling flipped tiles
 mod tiled_export {
+    use crate::REMAPPED_LAYERS;
+
     use std::collections::HashMap;
     use std::fs::File;
     use std::io::{BufReader, BufWriter, Write};
@@ -110,7 +115,7 @@ mod tiled_export {
                         .unwrap()
                         .iter()
                         .map(|&gid| {
-                            if layer.name == "Path" {
+                            if REMAPPED_LAYERS.contains(&layer.name.as_str()) {
                                 // Remap GIDs to tile type indices so runtime check is `== PATH`
                                 if gid == 0 {
                                     0
@@ -195,6 +200,7 @@ pub const fn get_level() -> Level {{
     Level {{
         walls: BACKGROUND,
         path: PATH,
+        dots: DOTS,
         dimensions: Vector2D {{ x: WIDTH, y: HEIGHT }},
         spawn: &POINTS_SPAWN[0],
         ghosts: POINTS_GHOST,

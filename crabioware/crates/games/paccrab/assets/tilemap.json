@@ -1,12 +1,12 @@
 {
-  "columns": 43,
+  "columns": 44,
   "image": "tiles.png",
   "imageheight": 8,
-  "imagewidth": 344,
+  "imagewidth": 352,
   "margin": 0,
   "name": "tilemap",
   "spacing": 0,
-  "tilecount": 43,
+  "tilecount": 44,
   "tiledversion": "1.12.2",
   "tileheight": 8,
   "tiles": [
@@ -181,6 +181,10 @@
     {
       "id": 42,
       "type": "Wall"
+    },
+    {
+      "id": 43,
+      "type": "Pellet"
     }
   ],
   "tilewidth": 8,
