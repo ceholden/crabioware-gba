@@ -4,14 +4,14 @@ use alloc::vec::Vec;
 use agb::display::object::{OamUnmanaged, ObjectUnmanaged, SpriteLoader};
 use agb::display::tiled::{MapLoan, RegularMap, TiledMap, VRamManager};
 use agb::fixnum::{num, Vector2D};
-use agb::input::{Button, ButtonController};
+use agb::input::ButtonController;
 use agb::rng::RandomNumberGenerator;
 use crabioware_core::ecs::{EntityId, World};
-use crabioware_core::games::{Game, GameDifficulty, GameState, Games};
+use crabioware_core::games::{Game, GameDifficulty, GameState};
 use crabioware_core::graphics::{GraphicsResource, Mode0TileMap, TileMapResource, TileMode};
 use crabioware_core::types::Number;
 
-use crate::systems::system_collision;
+use crate::systems::{system_collision, system_dots};
 
 use super::components::{
     Direction, DirectionComponent, GhostComponent, GhostKind, LocationComponent, PlayerComponent,
@@ -33,7 +33,7 @@ fn spawn_crab(world: &mut World, x: Number, y: Number) -> EntityId {
             desired: Direction::RIGHT,
         })
         .with(SpeedComponent(num!(0.5)))
-        .with(PlayerComponent)
+        .with(PlayerComponent { energized: false })
         .with(SpriteComponent {
             tag: SpriteTag::Crab,
             offset: Vector2D {
@@ -101,10 +101,12 @@ fn render_tiles(level: &Level, bg1: &mut MapLoan<'_, RegularMap>, vram: &mut VRa
 
 pub struct PacCrabGame<'g> {
     world: World,
+    // FIXME: ideally we wouldn't ever store entity IDs, and just query for ghosts/player by component
     player: EntityId,
     ghosts: Vec<EntityId>,
     rng: RandomNumberGenerator,
     time: i32,
+    dots_eaten: [bool; 600],
     level: Level,
     tiles: Option<Mode0TileMap<'g>>,
 }
@@ -184,6 +186,7 @@ impl<'g> PacCrabGame<'g> {
             ghosts,
             rng: game_rng,
             time: 0,
+            dots_eaten: [false; 600],
             level,
             tiles: None,
         }
@@ -231,6 +234,7 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
                 );
 
         system_player(&self.world, &self.player, &self.level, buttons);
+        system_dots(&self.world, &self.level, &self.player, &mut self.dots_eaten);
         system_ghost(
             &self.world,
             &self.ghosts,
@@ -240,7 +244,7 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
             player_dir,
             &mut self.rng,
         );
-        system_collision(&self.world, &self.player, &self.ghosts)
+        system_collision(&mut self.world, &self.player, &mut self.ghosts)
     }
 
     fn render(

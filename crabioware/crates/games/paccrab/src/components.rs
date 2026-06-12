@@ -41,7 +41,9 @@ impl Component for SpeedComponent {}
 
 /// Marker for the player entity; used by collision and rendering systems to distinguish the crab from ghosts.
 #[derive(Clone, Copy)]
-pub struct PlayerComponent;
+pub struct PlayerComponent {
+    pub energized: bool,
+}
 impl Component for PlayerComponent {}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

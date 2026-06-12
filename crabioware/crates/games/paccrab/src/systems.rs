@@ -1,7 +1,10 @@
 use agb::input::{Button, ButtonController};
 use agb::rng::RandomNumberGenerator;
+use alloc::vec::Vec;
 use crabioware_core::ecs::{EntityId, World};
 use crabioware_core::games::{GameState, Games};
+
+use crate::components::PlayerComponent;
 
 use super::ai::ghost_desired;
 use super::components::{
@@ -77,20 +80,62 @@ pub(crate) fn system_ghost(
     }
 }
 
-pub(crate) fn system_collision(world: &World, player: &EntityId, ghosts: &[EntityId]) -> GameState {
-    let (player_tx, player_ty) = world.with::<(&LocationComponent,), _, _>(player, |(loc,)| {
-        (tile_of(loc.location.x), tile_of(loc.location.y))
-    });
+/// Player <> dots & pellets
+pub(crate) fn system_dots(
+    world: &World,
+    level: &Level,
+    player: &EntityId,
+    dots_eaten: &mut [bool],
+) {
+    let (player_tx, player_ty, mut player_component) =
+        world.with::<(&LocationComponent, &mut PlayerComponent), _, _>(player, |(loc, pc)| {
+            (tile_of(loc.location.x), tile_of(loc.location.y), pc)
+        });
 
-    let collided = ghosts.iter().any(|ghost| {
-        world.with::<(&LocationComponent,), _, _>(ghost, |(loc,)| {
+    if let Some(tile_index) = level.is_edible_dot_tile(player_tx, player_ty, dots_eaten) {
+        dots_eaten[tile_index] = true;
+    }
+    if let Some(tile_index) = level.is_edible_pellet_tile(player_tx, player_ty, dots_eaten) {
+        dots_eaten[tile_index] = true;
+        player_component.energized = true;
+    }
+}
+
+/// Check collisions between ghosts and player
+pub(crate) fn system_collision(
+    world: &mut World,
+    player: &EntityId,
+    ghosts: &mut Vec<EntityId>,
+) -> GameState {
+    let (player_tx, player_ty, energized) = world
+        .with::<(&LocationComponent, &PlayerComponent), _, _>(player, |(loc, pc)| {
+            (
+                tile_of(loc.location.x),
+                tile_of(loc.location.y),
+                pc.energized,
+            )
+        });
+
+    let mut player_dead = false;
+    ghosts.retain(|ghost| {
+        let collided = world.with::<(&LocationComponent), _, _>(ghost, |loc| {
             tile_of(loc.location.x) == player_tx && tile_of(loc.location.y) == player_ty
-        })
+        });
+
+        match (collided, energized) {
+            (true, false) => {
+                player_dead = true;
+                true
+            }
+            (true, true) => {
+                world.destroy(ghost);
+                false
+            }
+            _ => true,
+        }
     });
 
-    // FIXME: check player's state after implementing power pellet
-
-    if collided {
+    if player_dead {
         GameState::GameOver
     } else {
         GameState::Running(Games::PacCrab)
