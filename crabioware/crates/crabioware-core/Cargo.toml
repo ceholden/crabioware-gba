@@ -8,9 +8,6 @@ edition.workspace = true
 
 [dependencies]
 agb = { workspace = true }
-anymap = { version = "1.0.0-beta.2", default-features = false, features = [
-    "hashbrown",
-] }
 itertools = { workspace = true }
 hashbrown = "0.14.3"
 slotmap = { version = "1.0.7", default-features = false }

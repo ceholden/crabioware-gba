@@ -1,6 +1,6 @@
 use alloc::boxed::Box;
 
-use anymap::hashbrown::AnyMap;
+use super::anymap::AnyMap;
 use itertools::Itertools;
 
 use super::builder::EntityBuilder;
