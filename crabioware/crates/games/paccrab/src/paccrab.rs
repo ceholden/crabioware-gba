@@ -84,6 +84,32 @@ fn spawn_ghost(
         .build()
 }
 
+/// Spawn static world sprite elements
+fn spawn_world(world: &mut World, level: &Level) {
+    // Spawn warp pads
+    for (wx, wy) in level.warps {
+        world
+            .create()
+            .with(LocationComponent {
+                location: Vector2D {
+                    x: level.tile_center(*wx as i32),
+                    y: level.tile_center(*wy as i32),
+                },
+            })
+            .with(SpriteComponent {
+                tag: SpriteTag::Warp,
+                tag_alt: SpriteTag::Warp,
+                alt_mode: false,
+                offset: Vector2D {
+                    x: (-4).into(),
+                    y: (-4).into(),
+                },
+                frame: 0,
+            })
+            .build();
+    }
+}
+
 fn render_tiles(level: &Level, bg1: &mut MapLoan<'_, RegularMap>, vram: &mut VRamManager) {
     level.set_background_paelttes(vram);
     let tileset = level.get_tileset();
@@ -178,6 +204,8 @@ impl<'g> PacCrabGame<'g> {
                 )
             })
             .collect();
+
+        spawn_world(&mut world, &level);
 
         Self {
             world,
