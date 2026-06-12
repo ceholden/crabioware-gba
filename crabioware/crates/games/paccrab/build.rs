@@ -12,8 +12,9 @@ const LEVELS: &[&str] = &["assets/maps/level-1.json"];
 fn main() {
     let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR environment variable must be specified");
 
-    let (tile_types, tile_type_names) = tiled_export::export_tilemap(&out_dir, "assets/tilemap.json")
-        .expect("Failed to export tilemap");
+    let (tile_types, tile_type_names) =
+        tiled_export::export_tilemap(&out_dir, "assets/tilemap.json")
+            .expect("Failed to export tilemap");
     for &level in LEVELS {
         tiled_export::export_level(&out_dir, Path::new(level), &tile_types, &tile_type_names)
             .expect("Failed to export level");
@@ -34,7 +35,10 @@ mod tiled_export {
     use serde::Deserialize;
 
     /// Export mappings: (tile_id -> type_index, type_name -> type_index)
-    pub fn export_tilemap(out_dir: &str, tilemap: &str) -> std::io::Result<(HashMap<i32, usize>, HashMap<String, usize>)> {
+    pub fn export_tilemap(
+        out_dir: &str,
+        tilemap: &str,
+    ) -> std::io::Result<(HashMap<i32, usize>, HashMap<String, usize>)> {
         // println!("cargo:rerun-if-changed={tilemap}");
         let file = File::open(tilemap)?;
         let reader = BufReader::new(file);

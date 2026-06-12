@@ -295,7 +295,7 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
 
         if player_dead {
             GameState::GameOver
-        } else if self.dots_remaining <= 0 {
+        } else if self.dots_remaining == 0 {
             GameState::Win(Games::PacCrab)
         } else {
             GameState::Running(Games::PacCrab)
