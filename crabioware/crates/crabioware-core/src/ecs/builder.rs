@@ -1,6 +1,6 @@
 use core::cell::RefCell;
 
-use anymap::hashbrown::AnyMap;
+use super::anymap::AnyMap;
 
 use super::core::{Component, ComponentMap, EntityId, EntityMap};
 

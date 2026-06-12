@@ -1,5 +1,5 @@
 // Find and borrow component data by entity ID(s)
-use anymap::hashbrown::AnyMap;
+use super::anymap::AnyMap;
 use core::cell::{Ref, RefMut};
 
 use super::core::{Component, ComponentMap, EntityId};

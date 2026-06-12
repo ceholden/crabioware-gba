@@ -53,6 +53,7 @@
 // * This is an entire tutorial for writing an ECS!
 //     * https://rust-tutorials.github.io/entity-component-scrapyard/01-introduction/introduction.html
 //
+mod anymap;
 mod builder;
 mod core;
 mod filter;
