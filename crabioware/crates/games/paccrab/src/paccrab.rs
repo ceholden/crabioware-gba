@@ -145,6 +145,14 @@ impl<'g> PacCrabGame<'g> {
             .ghosts
             .iter()
             .zip([
+                (GhostKind::Chase, Direction::UP, 1, 1, SpriteTag::GhostPink),
+                (
+                    GhostKind::Ambush,
+                    Direction::UP,
+                    28,
+                    1,
+                    SpriteTag::GhostYellow,
+                ),
                 (
                     GhostKind::Patrol {
                         chase_ticks: 120,
@@ -154,22 +162,8 @@ impl<'g> PacCrabGame<'g> {
                     },
                     Direction::UP,
                     1,
-                    1,
-                    SpriteTag::GhostPink,
-                ),
-                (
-                    GhostKind::Ambush,
-                    Direction::UP,
-                    28,
-                    1,
-                    SpriteTag::GhostYellow,
-                ),
-                (
-                    GhostKind::Random,
-                    Direction::UP,
-                    1,
                     18,
-                    SpriteTag::GhostBlue,
+                    SpriteTag::GhostOrange,
                 ),
             ])
             .map(|(&(x, y), (kind, dir, stx, sty, tag))| {
@@ -234,6 +228,7 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
             &self.player,
             &mut self.rng,
         );
+        // FIXME: return dead ghosts here so we can put them into some reincarnation queue
         system_collision(&mut self.world, &self.player, &mut self.ghosts)
     }
 
