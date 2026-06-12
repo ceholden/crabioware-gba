@@ -39,6 +39,23 @@ impl Level {
             && tile_y < self.dimensions.y as i32
     }
 
+    fn tile_index(&self, tile_x: i32, tile_y: i32) -> Option<usize> {
+        self.in_level(tile_x, tile_y)
+            .then(|| ((tile_y * self.dimensions.x as i32 + tile_x) as usize))
+    }
+
+    pub fn is_pellet_tile(&self, tile_x: i32, tile_y: i32) -> bool {
+        self.tile_index(tile_x, tile_y)
+            .map(|i| self.dots[i] == tilemaps::tilemap::PELLET as u8)
+            .unwrap_or(false)
+    }
+
+    pub fn is_dot_tile(&self, tile_x: i32, tile_y: i32) -> bool {
+        self.tile_index(tile_x, tile_y)
+            .map(|i| self.dots[i] == tilemaps::tilemap::DOT as u8)
+            .unwrap_or(false)
+    }
+
     /// Is this the door to the ghost house?
     fn is_door_tile(&self, tile_x: i32, tile_y: i32) -> bool {
         self.doors
@@ -48,23 +65,29 @@ impl Level {
 
     /// Are we inside the ghost house?
     fn is_ghost_house_tile(&self, tile_x: i32, tile_y: i32) -> bool {
-        self.in_level(tile_x, tile_y)
-            && self.path[(tile_y * self.dimensions.x as i32 + tile_x) as usize]
-                == tilemaps::tilemap::GHOST as u8
+        self.tile_index(tile_x, tile_y)
+            .map(|i| self.path[i] == tilemaps::tilemap::GHOST as u8)
+            .unwrap_or(false)
     }
 
     /// Can the player walk on this tile?
     pub fn is_walkable_tile(&self, tile_x: i32, tile_y: i32) -> bool {
-        self.in_level(tile_x, tile_y)
-            && self.path[(tile_y * self.dimensions.x as i32 + tile_x) as usize]
-                == tilemaps::tilemap::PATH as u8
+        self.tile_index(tile_x, tile_y)
+            .map(|i| self.path[i] == tilemaps::tilemap::PATH as u8)
+            .unwrap_or(false)
     }
 
     /// Can ghosts walk on this tile (they're allowed in the house)
     pub fn is_ghost_walkable_tile(&self, tile_x: i32, tile_y: i32) -> bool {
-        self.is_walkable_tile(tile_x, tile_y)
-            || self.is_door_tile(tile_x, tile_y)
-            || self.is_ghost_house_tile(tile_x, tile_y)
+        match self.tile_index(tile_x, tile_y) {
+            None => false,
+            Some(i) => {
+                let t = self.path[i];
+                t == tilemaps::tilemap::PATH as u8
+                    || t == tilemaps::tilemap::GHOST as u8
+                    || self.is_door_tile(tile_x, tile_y)
+            }
+        }
     }
 }
 
