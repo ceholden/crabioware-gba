@@ -44,16 +44,33 @@ impl Level {
             .then(|| ((tile_y * self.dimensions.x as i32 + tile_x) as usize))
     }
 
-    pub fn is_pellet_tile(&self, tile_x: i32, tile_y: i32) -> bool {
+    pub fn is_edible_pellet_tile(
+        &self,
+        tile_x: i32,
+        tile_y: i32,
+        edible: &[bool],
+    ) -> Option<usize> {
         self.tile_index(tile_x, tile_y)
-            .map(|i| self.dots[i] == tilemaps::tilemap::PELLET as u8)
-            .unwrap_or(false)
+            .map(|i| {
+                if self.dots[i] == tilemaps::tilemap::PELLET as u8 && edible.get(i).is_some() {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(None)
     }
 
-    pub fn is_dot_tile(&self, tile_x: i32, tile_y: i32) -> bool {
+    pub fn is_edible_dot_tile(&self, tile_x: i32, tile_y: i32, edible: &[bool]) -> Option<usize> {
         self.tile_index(tile_x, tile_y)
-            .map(|i| self.dots[i] == tilemaps::tilemap::DOT as u8)
-            .unwrap_or(false)
+            .map(|i| {
+                if self.dots[i] == tilemaps::tilemap::DOT as u8 && edible.get(i).is_some() {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(None)
     }
 
     /// Is this the door to the ghost house?
