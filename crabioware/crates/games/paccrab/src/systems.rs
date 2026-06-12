@@ -2,7 +2,6 @@ use agb::input::{Button, ButtonController};
 use agb::rng::RandomNumberGenerator;
 use alloc::vec::Vec;
 use crabioware_core::ecs::{EntityId, World};
-use crabioware_core::games::{GameState, Games};
 
 use crate::components::{PlayerComponent, SpriteComponent};
 
@@ -123,6 +122,7 @@ pub(crate) fn system_dots(
     level: &Level,
     player: &EntityId,
     dots_eaten: &mut [bool],
+    dots_dirty: &mut Vec<usize>,
 ) {
     world.with::<(
         &LocationComponent,
@@ -134,9 +134,11 @@ pub(crate) fn system_dots(
 
         if let Some(tile_index) = level.is_edible_dot_tile(player_tx, player_ty, dots_eaten) {
             dots_eaten[tile_index] = true;
+            dots_dirty.push(tile_index);
         }
         if let Some(tile_index) = level.is_edible_pellet_tile(player_tx, player_ty, dots_eaten) {
             dots_eaten[tile_index] = true;
+            dots_dirty.push(tile_index);
             player_comp.energized_time = 300;
             sprite_comp.alt_mode = true;
             true
@@ -146,13 +148,13 @@ pub(crate) fn system_dots(
     });
 }
 
-/// Check collisions between ghosts and player
+/// Check collisions between ghosts and player, returning true if player has died
 pub(crate) fn system_collision(
     world: &mut World,
     level: &Level,
     player: &EntityId,
     ghosts: &mut Vec<EntityId>,
-) -> GameState {
+) -> bool {
     let (player_tx, player_ty, is_energized) = world
         .with::<(&LocationComponent, &PlayerComponent), _, _>(player, |(loc, pc)| {
             (
@@ -181,9 +183,5 @@ pub(crate) fn system_collision(
         }
     });
 
-    if player_dead {
-        GameState::GameOver
-    } else {
-        GameState::Running(Games::PacCrab)
-    }
+    player_dead
 }

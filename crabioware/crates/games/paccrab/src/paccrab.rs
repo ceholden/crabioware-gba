@@ -2,24 +2,22 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 use agb::display::object::{OamUnmanaged, ObjectUnmanaged, SpriteLoader};
-use agb::display::tiled::{MapLoan, RegularMap, TiledMap, VRamManager};
+use agb::display::tiled::{MapLoan, RegularMap, TileSetting, TiledMap, VRamManager};
 use agb::fixnum::{num, Vector2D};
 use agb::input::ButtonController;
 use agb::rng::RandomNumberGenerator;
 use crabioware_core::ecs::{EntityId, World};
-use crabioware_core::games::{Game, GameDifficulty, GameState};
+use crabioware_core::games::{Game, GameDifficulty, GameState, Games};
 use crabioware_core::graphics::{GraphicsResource, Mode0TileMap, TileMapResource, TileMode};
 use crabioware_core::types::Number;
-
-use crate::systems::{system_collision, system_dots};
 
 use super::components::{
     Direction, DirectionComponent, GhostComponent, GhostKind, LocationComponent, PlayerComponent,
     SpeedComponent, SpriteComponent,
 };
 use super::graphics::SpriteTag;
-use super::levels::{Level, Levels};
-use super::systems::{system_ghost, system_player};
+use super::levels::{tilemaps::tilemap, Level, Levels};
+use super::systems::{system_collision, system_dots, system_ghost, system_player};
 
 fn spawn_crab(world: &mut World, x: Number, y: Number) -> EntityId {
     world
@@ -110,13 +108,12 @@ fn spawn_world(world: &mut World, level: &Level) {
     }
 }
 
-fn render_tiles(level: &Level, bg1: &mut MapLoan<'_, RegularMap>, vram: &mut VRamManager) {
-    level.set_background_paelttes(vram);
+fn render_walls(level: &Level, bg: &mut MapLoan<'_, RegularMap>, vram: &mut VRamManager) {
     let tileset = level.get_tileset();
     for y in 0..level.dimensions.y as u16 {
         for x in 0..level.dimensions.x as u16 {
             let tile_id = level.walls[(y as u32 * level.dimensions.x + x as u32) as usize] - 1;
-            bg1.set_tile(
+            bg.set_tile(
                 vram,
                 (x, y),
                 &tileset,
@@ -124,8 +121,27 @@ fn render_tiles(level: &Level, bg1: &mut MapLoan<'_, RegularMap>, vram: &mut VRa
             );
         }
     }
-    bg1.commit(vram);
-    bg1.set_visible(true);
+    bg.commit(vram);
+    bg.set_visible(true);
+}
+
+fn render_dots(level: &Level, bg: &mut MapLoan<'_, RegularMap>, vram: &mut VRamManager) {
+    let tileset = level.get_tileset();
+    for y in 0..level.dimensions.y as u16 {
+        for x in 0..level.dimensions.x as u16 {
+            let tile_id = level.dots[(y as u32 * level.dimensions.x + x as u32) as usize];
+            let tilesetting = match tile_id {
+                t if t == tilemap::DOT as u8 => Some(level.get_tilesetting(tilemap::DOT_GID)),
+                t if t == tilemap::PELLET as u8 => Some(level.get_tilesetting(tilemap::PELLET_GID)),
+                _ => None,
+            };
+            if let Some(tilesetting) = tilesetting {
+                bg.set_tile(vram, (x, y), &tileset, tilesetting);
+            }
+        }
+    }
+    bg.commit(vram);
+    bg.set_visible(true);
 }
 
 pub struct PacCrabGame<'g> {
@@ -135,9 +151,9 @@ pub struct PacCrabGame<'g> {
     ghosts: Vec<EntityId>,
     rng: RandomNumberGenerator,
     time: usize,
-    // FIXME: dots remaining for win condition - set at level load time based on tile data
-    // dots_remaining: u32,
+    dots_remaining: usize,
     dots_eaten: [bool; 600],
+    dots_dirty: Vec<usize>,
     level: Level,
     tiles: Option<Mode0TileMap<'g>>,
 }
@@ -213,7 +229,9 @@ impl<'g> PacCrabGame<'g> {
             ghosts,
             rng: game_rng,
             time: 0,
+            dots_remaining: level.total_dots,
             dots_eaten: [false; 600],
+            dots_dirty: Vec::new(),
             level,
             tiles: None,
         }
@@ -238,8 +256,15 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
         };
 
         let mut tiles = Mode0TileMap::default_32x32_4bpp(&mode0);
+
+        self.level.set_background_palettes(vram);
+
         tiles.bg1.set_visible(true);
-        render_tiles(&self.level, &mut tiles.bg1, vram);
+        render_walls(&self.level, &mut tiles.bg1, vram);
+
+        tiles.bg2.set_visible(true);
+        render_dots(&self.level, &mut tiles.bg2, vram);
+
         self.tiles = Some(tiles);
     }
 
@@ -247,7 +272,13 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
         self.time = self.time.saturating_add(time as usize);
 
         system_player(&self.world, &self.level, &self.player, buttons);
-        system_dots(&self.world, &self.level, &self.player, &mut self.dots_eaten);
+        system_dots(
+            &self.world,
+            &self.level,
+            &self.player,
+            &mut self.dots_eaten,
+            &mut self.dots_dirty,
+        );
         system_ghost(
             &self.world,
             &self.level,
@@ -256,12 +287,24 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
             &mut self.rng,
         );
         // FIXME: return dead ghosts here so we can put them into some reincarnation queue
-        system_collision(&mut self.world, &self.level, &self.player, &mut self.ghosts)
+        let player_dead =
+            system_collision(&mut self.world, &self.level, &self.player, &mut self.ghosts);
+
+        self.dots_remaining -= self.dots_dirty.len();
+        agb::println!("Dots remaining {}", self.dots_remaining);
+
+        if player_dead {
+            GameState::GameOver
+        } else if self.dots_remaining <= 0 {
+            GameState::Win(Games::PacCrab)
+        } else {
+            GameState::Running(Games::PacCrab)
+        }
     }
 
     fn render(
         &mut self,
-        _vram: &mut VRamManager,
+        vram: &mut VRamManager,
         unmanaged: &mut OamUnmanaged,
         sprite_loader: &mut SpriteLoader,
     ) -> Option<()> {
@@ -283,6 +326,20 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
                 .set_position((location.location + sprite.offset).floor())
                 .show();
             oam.next()?.set(&object);
+        }
+
+        // Clear dots/pellet tiles that have been eaten
+        if let Some(ref mut tiles) = self.tiles {
+            let tileset = self.level.get_tileset();
+            for &i in &self.dots_dirty {
+                let x = (i % self.level.dimensions.x as usize) as u16;
+                let y = (i / self.level.dimensions.x as usize) as u16;
+                tiles
+                    .bg2
+                    .set_tile(vram, (x, y), &tileset, TileSetting::BLANK);
+            }
+            self.dots_dirty.clear();
+            tiles.bg2.commit(vram);
         }
 
         Some(())
