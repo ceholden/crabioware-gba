@@ -189,5 +189,4 @@ pub(crate) fn apply_movement<FWalk, FWarp>(
             }
         }
     }
-
 }

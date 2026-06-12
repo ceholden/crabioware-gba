@@ -9,6 +9,7 @@ pub struct Level {
     pub walls: &'static [u8],
     pub path: &'static [u8],
     pub dots: &'static [u8],
+    pub total_dots: usize,
     pub dimensions: Vector2D<u32>,
     pub tile_size: u8,
 
@@ -37,7 +38,7 @@ impl Level {
         tile_sheet::tiles.tile_settings[idx]
     }
 
-    pub fn set_background_paelttes(&self, vram: &mut VRamManager) {
+    pub fn set_background_palettes(&self, vram: &mut VRamManager) {
         vram.set_background_palettes(tile_sheet::PALETTES);
     }
 
@@ -136,9 +137,7 @@ impl Levels {
     }
 }
 
-mod tilemaps {
-
-    use super::{tile_sheet, Level};
+pub mod tilemaps {
 
     pub mod tilemap {
         include!(concat!(env!("OUT_DIR"), "/tilemap.rs"));
