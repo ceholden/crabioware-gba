@@ -44,15 +44,10 @@ impl Level {
             .then(|| ((tile_y * self.dimensions.x as i32 + tile_x) as usize))
     }
 
-    pub fn is_edible_pellet_tile(
-        &self,
-        tile_x: i32,
-        tile_y: i32,
-        edible: &[bool],
-    ) -> Option<usize> {
+    pub fn is_edible_pellet_tile(&self, tile_x: i32, tile_y: i32, eaten: &[bool]) -> Option<usize> {
         self.tile_index(tile_x, tile_y)
             .map(|i| {
-                if self.dots[i] == tilemaps::tilemap::PELLET as u8 && edible.get(i).is_some() {
+                if self.dots[i] == tilemaps::tilemap::PELLET as u8 && !eaten[i] {
                     Some(i)
                 } else {
                     None
@@ -61,10 +56,10 @@ impl Level {
             .unwrap_or(None)
     }
 
-    pub fn is_edible_dot_tile(&self, tile_x: i32, tile_y: i32, edible: &[bool]) -> Option<usize> {
+    pub fn is_edible_dot_tile(&self, tile_x: i32, tile_y: i32, eaten: &[bool]) -> Option<usize> {
         self.tile_index(tile_x, tile_y)
             .map(|i| {
-                if self.dots[i] == tilemaps::tilemap::DOT as u8 && edible.get(i).is_some() {
+                if self.dots[i] == tilemaps::tilemap::DOT as u8 && !eaten[i] {
                     Some(i)
                 } else {
                     None
