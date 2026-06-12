@@ -74,14 +74,16 @@ where
 /// - nudges the perpendicular axis toward the tile center
 /// - commits the buffered turn when aligned and the target tile is open
 /// - advances along the current direction, stopping cleanly at tile centers
-pub(crate) fn apply_movement<F>(
+pub(crate) fn apply_movement<FWalk, FWarp>(
     location: &mut LocationComponent,
     direction: &mut DirectionComponent,
     speed: Number,
     tile_size: i32,
-    fn_walkable: F,
+    fn_walk: FWalk,
+    fn_warp: FWarp,
 ) where
-    F: Fn(i32, i32) -> bool,
+    FWalk: Fn(i32, i32) -> bool,
+    FWarp: Fn(i32, i32) -> Option<(Number, Number)>,
 {
     // Nudge perpendicular axis toward tile center
     match direction.direction {
@@ -115,10 +117,10 @@ pub(crate) fn apply_movement<F>(
             };
         if aligned {
             let tile_open = match desired {
-                Direction::RIGHT => fn_walkable(tx + 1, ty),
-                Direction::LEFT => fn_walkable(tx - 1, ty),
-                Direction::UP => fn_walkable(tx, ty - 1),
-                Direction::DOWN => fn_walkable(tx, ty + 1),
+                Direction::RIGHT => fn_walk(tx + 1, ty),
+                Direction::LEFT => fn_walk(tx - 1, ty),
+                Direction::UP => fn_walk(tx, ty - 1),
+                Direction::DOWN => fn_walk(tx, ty + 1),
             };
             if tile_open || is_uturn {
                 match desired {
@@ -138,8 +140,11 @@ pub(crate) fn apply_movement<F>(
             let nx = x + speed;
             if x < cx {
                 location.location.x = if nx < cx { nx } else { cx };
-            } else if fn_walkable(tx + 1, ty) {
+            } else if fn_walk(tx + 1, ty) {
                 location.location.x = nx;
+            } else if let Some((wx, wy)) = fn_warp(tx, ty) {
+                location.location.x = wx;
+                location.location.y = wy;
             } else {
                 location.location.x = cx;
             }
@@ -148,8 +153,11 @@ pub(crate) fn apply_movement<F>(
             let nx = x - speed;
             if x > cx {
                 location.location.x = if nx > cx { nx } else { cx };
-            } else if fn_walkable(tx - 1, ty) {
+            } else if fn_walk(tx - 1, ty) {
                 location.location.x = nx;
+            } else if let Some((wx, wy)) = fn_warp(tx, ty) {
+                location.location.x = wx;
+                location.location.y = wy;
             } else {
                 location.location.x = cx;
             }
@@ -158,8 +166,11 @@ pub(crate) fn apply_movement<F>(
             let ny = y - speed;
             if y > cy {
                 location.location.y = if ny > cy { ny } else { cy };
-            } else if fn_walkable(tx, ty - 1) {
+            } else if fn_walk(tx, ty - 1) {
                 location.location.y = ny;
+            } else if let Some((wx, wy)) = fn_warp(tx, ty) {
+                location.location.x = wx;
+                location.location.y = wy;
             } else {
                 location.location.y = cy;
             }
@@ -168,11 +179,15 @@ pub(crate) fn apply_movement<F>(
             let ny = y + speed;
             if y < cy {
                 location.location.y = if ny < cy { ny } else { cy };
-            } else if fn_walkable(tx, ty + 1) {
+            } else if fn_walk(tx, ty + 1) {
                 location.location.y = ny;
+            } else if let Some((wx, wy)) = fn_warp(tx, ty) {
+                location.location.x = wx;
+                location.location.y = wy;
             } else {
                 location.location.y = cy;
             }
         }
     }
+
 }

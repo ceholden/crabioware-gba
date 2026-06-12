@@ -112,6 +112,17 @@ impl Level {
             }
         }
     }
+
+    // Warp to/from in pixel units
+    pub fn warp_destination(&self, tile_x: i32, tile_y: i32) -> Option<(Number, Number)> {
+        self.warps
+            .iter()
+            .position(|&(wx, wy)| wx as i32 == tile_x && wy as i32 == tile_y)
+            .map(|i| {
+                let (tx, ty) = self.warps[(i + 1) % self.warps.len()];
+                (self.tile_center(tx as i32), self.tile_center(ty as i32))
+            })
+    }
 }
 
 pub enum Levels {

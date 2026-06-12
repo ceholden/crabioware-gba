@@ -50,6 +50,7 @@ pub(crate) fn system_player(
                 speed.0,
                 level.tile_size as i32,
                 |tile_x, tile_y| level.is_walkable_tile(tile_x, tile_y),
+                |tile_x, tile_y| level.warp_destination(tile_x, tile_y),
             );
         },
     );
@@ -107,6 +108,7 @@ pub(crate) fn system_ghost(
                     speed.0,
                     level.tile_size as i32,
                     |tile_x, tile_y| level.is_ghost_walkable_tile(tile_x, tile_y),
+                    |tile_x, tile_y| level.warp_destination(tile_x, tile_y),
                 );
 
                 sprite_comp.alt_mode = player_energized;
