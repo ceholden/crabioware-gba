@@ -3,6 +3,9 @@ use std::path::Path;
 // Remap GID for these layers
 const REMAPPED_LAYERS: &[&str] = &["Path", "Dots"];
 
+// Tile size in pixels
+const TILE_SIZE_PIXELS: i32 = 8;
+
 // Build Tiled map export JSON into Rust modules we can use
 const LEVELS: &[&str] = &["assets/maps/level-1.json"];
 
@@ -20,7 +23,7 @@ fn main() {
 // TODO: We can use tiled crate to better handle tmx files..
 //          In particular this would be useful for handling flipped tiles
 mod tiled_export {
-    use crate::REMAPPED_LAYERS;
+    use crate::{REMAPPED_LAYERS, TILE_SIZE_PIXELS};
 
     use std::collections::HashMap;
     use std::fs::File;
@@ -146,7 +149,15 @@ mod tiled_export {
                         .as_ref()
                         .unwrap()
                         .iter()
-                        .map(|obj| (&obj.object_name, (obj.x.to_string(), obj.y.to_string())))
+                        .map(|obj| {
+                            (
+                                &obj.object_name,
+                                (
+                                    (obj.x / TILE_SIZE_PIXELS).to_string(),
+                                    (obj.y / TILE_SIZE_PIXELS).to_string(),
+                                ),
+                            )
+                        })
                         .collect::<Vec<_>>(),
                 )
             })
@@ -156,6 +167,11 @@ mod tiled_export {
         writeln!(&mut writer, "// Level data for {filename}")?;
         writeln!(&mut writer, "const WIDTH: u32 = {};", level.width)?;
         writeln!(&mut writer, "const HEIGHT: u32 = {};", level.height)?;
+        writeln!(
+            &mut writer,
+            "const TILE_SIZE_PIXELS: u8 = {};",
+            TILE_SIZE_PIXELS
+        )?;
 
         writeln!(&mut writer, "// Tilemap layers")?;
         for (name, data) in tile_layers.iter() {
@@ -182,7 +198,7 @@ mod tiled_export {
             for (obj_name, xys) in objects_by_type.iter() {
                 writeln!(
                     &mut writer,
-                    "const {}_{}: &[(i32, i32)] = &[{xys}];",
+                    "const {}_{}: &[(u8, u8)] = &[{xys}];",
                     layer_name.to_uppercase(),
                     obj_name.to_uppercase()
                 )?;
@@ -202,6 +218,7 @@ pub const fn get_level() -> Level {{
         path: PATH,
         dots: DOTS,
         dimensions: Vector2D {{ x: WIDTH, y: HEIGHT }},
+        tile_size: TILE_SIZE_PIXELS,
         spawn: &POINTS_SPAWN[0],
         ghosts: POINTS_GHOST,
         berries: POINTS_BERRY,

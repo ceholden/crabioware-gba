@@ -2,22 +2,21 @@ use agb::fixnum::num;
 use crabioware_core::types::Number;
 
 use super::components::{Direction, DirectionComponent, LocationComponent};
-use super::levels::{Level, TILE_SIZE};
 
-pub(crate) fn tile_of(pos: Number) -> i32 {
-    (pos / Number::new(TILE_SIZE)).floor()
+fn tile_of(pos: Number, tile_size: i32) -> i32 {
+    (pos / Number::new(tile_size)).floor()
 }
 
-pub(crate) fn tile_center(tile_idx: i32) -> Number {
-    Number::new(tile_idx * TILE_SIZE + TILE_SIZE / 2)
+fn tile_center(tile_idx: i32, tile_size: i32) -> Number {
+    Number::new(tile_idx * tile_size + tile_size / 2)
 }
 
-pub(crate) fn nearest_tile_center(pos: Number) -> Number {
-    tile_center(tile_of(pos))
+fn nearest_tile_center(pos: Number, tile_size: i32) -> Number {
+    tile_center(tile_of(pos, tile_size), tile_size)
 }
 
-fn nudge_to_center(pos: Number, speed: Number) -> Number {
-    let center = nearest_tile_center(pos);
+fn nudge_to_center(pos: Number, speed: Number, tile_size: i32) -> Number {
+    let center = nearest_tile_center(pos, tile_size);
     let delta = center - pos;
     if delta.abs() <= speed {
         center
@@ -28,8 +27,8 @@ fn nudge_to_center(pos: Number, speed: Number) -> Number {
     }
 }
 
-pub(crate) fn aligned_for_turn(pos: Number, speed: Number) -> bool {
-    (pos - nearest_tile_center(pos)).abs() <= speed
+pub(crate) fn aligned_for_turn(pos: Number, speed: Number, tile_size: i32) -> bool {
+    (pos - nearest_tile_center(pos, tile_size)).abs() <= speed
 }
 
 /// Walkable neighbors of tile `(tx, ty)`, omitting `exclude` (the direction
@@ -79,6 +78,7 @@ pub(crate) fn apply_movement<F>(
     location: &mut LocationComponent,
     direction: &mut DirectionComponent,
     speed: Number,
+    tile_size: i32,
     fn_walkable: F,
 ) where
     F: Fn(i32, i32) -> bool,
@@ -86,18 +86,18 @@ pub(crate) fn apply_movement<F>(
     // Nudge perpendicular axis toward tile center
     match direction.direction {
         Direction::LEFT | Direction::RIGHT => {
-            location.location.y = nudge_to_center(location.location.y, speed);
+            location.location.y = nudge_to_center(location.location.y, speed, tile_size);
         }
         Direction::UP | Direction::DOWN => {
-            location.location.x = nudge_to_center(location.location.x, speed);
+            location.location.x = nudge_to_center(location.location.x, speed, tile_size);
         }
     }
 
     // Compute tile position once (after nudge, reused by both turn and move)
-    let tx = tile_of(location.location.x);
-    let ty = tile_of(location.location.y);
-    let cx = tile_center(tx);
-    let cy = tile_center(ty);
+    let tx = tile_of(location.location.x, tile_size);
+    let ty = tile_of(location.location.y, tile_size);
+    let cx = tile_center(tx, tile_size);
+    let cy = tile_center(ty, tile_size);
 
     // Attempt turn into desired direction
     let desired = direction.desired;
@@ -106,8 +106,12 @@ pub(crate) fn apply_movement<F>(
         let is_uturn = desired == current.opposite();
         let aligned = is_uturn
             || match desired {
-                Direction::LEFT | Direction::RIGHT => aligned_for_turn(location.location.y, speed),
-                Direction::UP | Direction::DOWN => aligned_for_turn(location.location.x, speed),
+                Direction::LEFT | Direction::RIGHT => {
+                    aligned_for_turn(location.location.y, speed, tile_size)
+                }
+                Direction::UP | Direction::DOWN => {
+                    aligned_for_turn(location.location.x, speed, tile_size)
+                }
             };
         if aligned {
             let tile_open = match desired {

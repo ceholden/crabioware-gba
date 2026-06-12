@@ -11,7 +11,7 @@ use super::components::{
     Direction, DirectionComponent, GhostComponent, LocationComponent, SpeedComponent,
 };
 use super::levels::Level;
-use super::movement::{apply_movement, tile_of};
+use super::movement::apply_movement;
 
 pub(crate) fn system_player(
     world: &World,
@@ -44,9 +44,13 @@ pub(crate) fn system_player(
                 spr.alt_mode = false;
             }
 
-            apply_movement(&mut location, &mut direction, speed.0, |tile_x, tile_y| {
-                level.is_walkable_tile(tile_x, tile_y)
-            });
+            apply_movement(
+                &mut location,
+                &mut direction,
+                speed.0,
+                level.tile_size as i32,
+                |tile_x, tile_y| level.is_walkable_tile(tile_x, tile_y),
+            );
         },
     );
 }
@@ -64,8 +68,8 @@ pub(crate) fn system_ghost(
             player,
             |(loc, dir, pc)| {
                 (
-                    tile_of(loc.location.x),
-                    tile_of(loc.location.y),
+                    level.tile_of(loc.location.x),
+                    level.tile_of(loc.location.y),
                     dir.direction,
                     pc.is_energized(),
                 )
@@ -82,8 +86,8 @@ pub(crate) fn system_ghost(
         ), _, _>(
             ghost,
             |(mut location, mut direction, speed, mut ghost_comp, mut sprite_comp)| {
-                let tx = tile_of(location.location.x);
-                let ty = tile_of(location.location.y);
+                let tx = level.tile_of(location.location.x);
+                let ty = level.tile_of(location.location.y);
                 direction.desired = ghost_desired(
                     &mut ghost_comp,
                     tx,
@@ -97,9 +101,13 @@ pub(crate) fn system_ghost(
                 );
 
                 // FIXME: ghosts shouldn't move into house _after_ first exit
-                apply_movement(&mut location, &mut direction, speed.0, |tile_x, tile_y| {
-                    level.is_ghost_walkable_tile(tile_x, tile_y)
-                });
+                apply_movement(
+                    &mut location,
+                    &mut direction,
+                    speed.0,
+                    level.tile_size as i32,
+                    |tile_x, tile_y| level.is_ghost_walkable_tile(tile_x, tile_y),
+                );
 
                 sprite_comp.alt_mode = player_energized;
             },
@@ -119,8 +127,8 @@ pub(crate) fn system_dots(
         &mut PlayerComponent,
         &mut SpriteComponent,
     ), _, _>(player, |(loc_comp, mut player_comp, mut sprite_comp)| {
-        let player_tx = tile_of(loc_comp.location.x);
-        let player_ty = tile_of(loc_comp.location.y);
+        let player_tx = level.tile_of(loc_comp.location.x);
+        let player_ty = level.tile_of(loc_comp.location.y);
 
         if let Some(tile_index) = level.is_edible_dot_tile(player_tx, player_ty, dots_eaten) {
             dots_eaten[tile_index] = true;
@@ -139,14 +147,15 @@ pub(crate) fn system_dots(
 /// Check collisions between ghosts and player
 pub(crate) fn system_collision(
     world: &mut World,
+    level: &Level,
     player: &EntityId,
     ghosts: &mut Vec<EntityId>,
 ) -> GameState {
     let (player_tx, player_ty, is_energized) = world
         .with::<(&LocationComponent, &PlayerComponent), _, _>(player, |(loc, pc)| {
             (
-                tile_of(loc.location.x),
-                tile_of(loc.location.y),
+                level.tile_of(loc.location.x),
+                level.tile_of(loc.location.y),
                 pc.energized_time > 0,
             )
         });
@@ -154,7 +163,7 @@ pub(crate) fn system_collision(
     let mut player_dead = false;
     ghosts.retain(|ghost| {
         let collided = world.with::<(&LocationComponent), _, _>(ghost, |loc| {
-            tile_of(loc.location.x) == player_tx && tile_of(loc.location.y) == player_ty
+            level.tile_of(loc.location.x) == player_tx && level.tile_of(loc.location.y) == player_ty
         });
 
         match (collided, is_energized) {
