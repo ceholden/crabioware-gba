@@ -1,9 +1,8 @@
 use agb::display::tiled::{TileSet, TileSetting, VRamManager};
 use agb::{fixnum::Vector2D, include_background_gfx};
+use crabioware_core::types::Number;
 
 include_background_gfx!(tile_sheet, "000000", tiles => "assets/tiles.png");
-
-pub const TILE_SIZE: i32 = 8;
 
 // FIXME: embed walls / path into a "Map"
 pub struct Level {
@@ -11,14 +10,25 @@ pub struct Level {
     pub path: &'static [u8],
     pub dots: &'static [u8],
     pub dimensions: Vector2D<u32>,
+    pub tile_size: u8,
 
-    pub spawn: &'static (i32, i32),
-    pub ghosts: &'static [(i32, i32)],
-    pub berries: &'static [(i32, i32)],
-    pub doors: &'static [(i32, i32)],
-    pub warps: &'static [(i32, i32)],
+    // Tile coordinates
+    pub spawn: &'static (u8, u8),
+    pub ghosts: &'static [(u8, u8)],
+    pub berries: &'static [(u8, u8)],
+    pub doors: &'static [(u8, u8)],
+    pub warps: &'static [(u8, u8)],
 }
 impl Level {
+    pub fn tile_of(&self, pos: Number) -> i32 {
+        (pos / Number::new(self.tile_size as i32)).floor()
+    }
+
+    pub fn tile_center(&self, tile_idx: i32) -> Number {
+        let ts = self.tile_size as i32;
+        Number::new(tile_idx * ts + ts / 2)
+    }
+
     pub fn get_tileset(&self) -> &TileSet<'_> {
         &tile_sheet::tiles.tiles
     }
@@ -69,10 +79,11 @@ impl Level {
     }
 
     /// Is this the door to the ghost house?
-    fn is_door_tile(&self, tile_x: i32, tile_y: i32) -> bool {
+    fn is_door_tile(&self, tile_x: u8, tile_y: u8) -> bool {
         self.doors
             .iter()
-            .any(|&(px, py)| px / TILE_SIZE == tile_x && py / TILE_SIZE == tile_y)
+            .copied()
+            .any(|tile| tile == (tile_x, tile_y))
     }
 
     /// Are we inside the ghost house?
@@ -97,7 +108,7 @@ impl Level {
                 let t = self.path[i];
                 t == tilemaps::tilemap::PATH as u8
                     || t == tilemaps::tilemap::GHOST as u8
-                    || self.is_door_tile(tile_x, tile_y)
+                    || self.is_door_tile(tile_x as u8, tile_y as u8)
             }
         }
     }

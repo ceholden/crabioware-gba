@@ -19,7 +19,6 @@ use super::components::{
 };
 use super::graphics::SpriteTag;
 use super::levels::{Level, Levels};
-use super::movement::tile_of;
 use super::systems::{system_ghost, system_player};
 
 fn spawn_crab(world: &mut World, x: Number, y: Number) -> EntityId {
@@ -136,8 +135,8 @@ impl<'g> PacCrabGame<'g> {
         let level = Levels::LEVEL_1.get_level();
         let player = spawn_crab(
             &mut world,
-            Number::new(level.spawn.0),
-            Number::new(level.spawn.1),
+            Number::new(level.spawn.0 as i32 * level.tile_size as i32),
+            Number::new(level.spawn.1 as i32 * level.tile_size as i32),
         );
 
         // TODO: exit gate and logic
@@ -169,8 +168,8 @@ impl<'g> PacCrabGame<'g> {
             .map(|(&(x, y), (kind, dir, stx, sty, tag))| {
                 spawn_ghost(
                     &mut world,
-                    Number::new(x),
-                    Number::new(y),
+                    Number::new(x as i32 * level.tile_size as i32),
+                    Number::new(y as i32 * level.tile_size as i32),
                     kind,
                     dir,
                     stx,
@@ -229,7 +228,7 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
             &mut self.rng,
         );
         // FIXME: return dead ghosts here so we can put them into some reincarnation queue
-        system_collision(&mut self.world, &self.player, &mut self.ghosts)
+        system_collision(&mut self.world, &self.level, &self.player, &mut self.ghosts)
     }
 
     fn render(
