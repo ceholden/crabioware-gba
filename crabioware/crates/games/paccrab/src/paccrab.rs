@@ -41,7 +41,7 @@ fn spawn_crab(world: &mut World, x: Number, y: Number) -> EntityId {
                 x: (-4).into(),
                 y: (-4).into(),
             },
-            frame: 0,
+            animation_interval: 1,
         })
         .build()
 }
@@ -79,7 +79,7 @@ fn spawn_ghost(
                 x: (-4).into(),
                 y: (-4).into(),
             },
-            frame: 0,
+            animation_interval: 1,
         })
         .build()
 }
@@ -104,7 +104,7 @@ fn spawn_world(world: &mut World, level: &Level) {
                     x: (-4).into(),
                     y: (-4).into(),
                 },
-                frame: 0,
+                animation_interval: 25,
             })
             .build();
     }
@@ -134,7 +134,7 @@ pub struct PacCrabGame<'g> {
     player: EntityId,
     ghosts: Vec<EntityId>,
     rng: RandomNumberGenerator,
-    time: i32,
+    time: usize,
     // FIXME: dots remaining for win condition - set at level load time based on tile data
     // dots_remaining: u32,
     dots_eaten: [bool; 600],
@@ -244,7 +244,7 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
     }
 
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
-        self.time += time;
+        self.time = self.time.saturating_add(time as usize);
 
         system_player(&self.world, &self.level, &self.player, buttons);
         system_dots(&self.world, &self.level, &self.player, &mut self.dots_eaten);
@@ -272,7 +272,12 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
             .components::<(&LocationComponent, &SpriteComponent)>()
         {
             let mut object = ObjectUnmanaged::new(
-                sprite_loader.get_vram_sprite(sprite.get_tag().tag().sprite(sprite.frame.into())),
+                sprite_loader.get_vram_sprite(
+                    sprite
+                        .get_tag()
+                        .tag()
+                        .animation_sprite(self.time / sprite.animation_interval),
+                ),
             );
             object
                 .set_position((location.location + sprite.offset).floor())

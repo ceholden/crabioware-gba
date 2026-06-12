@@ -83,7 +83,7 @@ pub struct SpriteComponent {
     pub tag_alt: SpriteTag,
     pub alt_mode: bool,
     pub offset: Vector2D<Number>,
-    pub frame: u8,
+    pub animation_interval: usize,
 }
 impl SpriteComponent {
     pub fn get_tag(&self) -> SpriteTag {
