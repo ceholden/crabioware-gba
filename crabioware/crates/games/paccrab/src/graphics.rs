@@ -13,6 +13,7 @@ static GHOST_BLUE: &Tag = SPRITES.tags().get("blue");
 static GHOST_ORANGE: &Tag = SPRITES.tags().get("orange");
 static GHOST_SCARED: &Tag = SPRITES.tags().get("scared");
 static BERRY: &Tag = SPRITES.tags().get("berry");
+static WARP: &Tag = SPRITES.tags().get("warp");
 
 #[derive(Clone, Copy, Debug)]
 pub enum SpriteTag {
@@ -24,6 +25,7 @@ pub enum SpriteTag {
     GhostOrange,
     GhostScared,
     Berry,
+    Warp,
 }
 impl SpriteTag {
     pub fn tag(&self) -> &Tag {
@@ -36,6 +38,7 @@ impl SpriteTag {
             SpriteTag::GhostOrange => GHOST_ORANGE,
             SpriteTag::GhostScared => GHOST_SCARED,
             SpriteTag::Berry => BERRY,
+            SpriteTag::Warp => WARP,
         }
     }
 }
