@@ -9,6 +9,7 @@ pub const TILE_SIZE: i32 = 8;
 pub struct Level {
     pub walls: &'static [u8],
     pub path: &'static [u8],
+    pub dots: &'static [u8],
     pub dimensions: Vector2D<u32>,
 
     pub spawn: &'static (i32, i32),
