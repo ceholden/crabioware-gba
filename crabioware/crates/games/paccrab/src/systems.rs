@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 use crabioware_core::ecs::{EntityId, World};
 use crabioware_core::games::{GameState, Games};
 
-use crate::components::PlayerComponent;
+use crate::components::{PlayerComponent, SpriteComponent};
 
 use super::ai::ghost_desired;
 use super::components::{
@@ -15,49 +15,73 @@ use super::movement::{apply_movement, tile_of};
 
 pub(crate) fn system_player(
     world: &World,
-    player: &EntityId,
     level: &Level,
+    player: &EntityId,
     buttons: &ButtonController,
 ) {
     world.with::<(
         &mut LocationComponent,
         &mut DirectionComponent,
         &SpeedComponent,
-    ), _, _>(player, |(mut location, mut direction, speed)| {
-        if buttons.is_pressed(Button::LEFT) {
-            direction.desired = Direction::LEFT;
-        } else if buttons.is_pressed(Button::RIGHT) {
-            direction.desired = Direction::RIGHT;
-        } else if buttons.is_pressed(Button::UP) {
-            direction.desired = Direction::UP;
-        } else if buttons.is_pressed(Button::DOWN) {
-            direction.desired = Direction::DOWN;
-        }
+        &mut PlayerComponent,
+        &mut SpriteComponent,
+    ), _, _>(
+        player,
+        |(mut location, mut direction, speed, mut pc, mut spr)| {
+            if buttons.is_pressed(Button::LEFT) {
+                direction.desired = Direction::LEFT;
+            } else if buttons.is_pressed(Button::RIGHT) {
+                direction.desired = Direction::RIGHT;
+            } else if buttons.is_pressed(Button::UP) {
+                direction.desired = Direction::UP;
+            } else if buttons.is_pressed(Button::DOWN) {
+                direction.desired = Direction::DOWN;
+            }
 
-        apply_movement(&mut location, &mut direction, speed.0, |tile_x, tile_y| {
-            level.is_walkable_tile(tile_x, tile_y)
-        });
-    });
+            // Decrement energized time
+            pc.energized_time = pc.energized_time.saturating_sub(1);
+            if !pc.is_energized() {
+                spr.alt_mode = false;
+            }
+
+            apply_movement(&mut location, &mut direction, speed.0, |tile_x, tile_y| {
+                level.is_walkable_tile(tile_x, tile_y)
+            });
+        },
+    );
 }
 
 pub(crate) fn system_ghost(
     world: &World,
-    ghosts: &[EntityId],
     level: &Level,
-    player_tx: i32,
-    player_ty: i32,
-    player_dir: Direction,
+    ghosts: &[EntityId],
+    player: &EntityId,
     rng: &mut RandomNumberGenerator,
 ) {
+    // Snapshot player tile position for ghost AI before running player system
+    let (player_tx, player_ty, player_dir, player_energized) =
+        world.with::<(&LocationComponent, &DirectionComponent, &PlayerComponent), _, _>(
+            player,
+            |(loc, dir, pc)| {
+                (
+                    tile_of(loc.location.x),
+                    tile_of(loc.location.y),
+                    dir.direction,
+                    pc.is_energized(),
+                )
+            },
+        );
+
     for ghost in ghosts {
         world.with::<(
             &mut LocationComponent,
             &mut DirectionComponent,
             &SpeedComponent,
             &mut GhostComponent,
+            &mut SpriteComponent,
         ), _, _>(
             ghost,
-            |(mut location, mut direction, speed, mut ghost_comp)| {
+            |(mut location, mut direction, speed, mut ghost_comp, mut sprite_comp)| {
                 let tx = tile_of(location.location.x);
                 let ty = tile_of(location.location.y);
                 direction.desired = ghost_desired(
@@ -71,10 +95,13 @@ pub(crate) fn system_ghost(
                     level,
                     rng,
                 );
+
                 // FIXME: ghosts shouldn't move into house _after_ first exit
                 apply_movement(&mut location, &mut direction, speed.0, |tile_x, tile_y| {
                     level.is_ghost_walkable_tile(tile_x, tile_y)
                 });
+
+                sprite_comp.alt_mode = player_energized;
             },
         );
     }
@@ -87,18 +114,26 @@ pub(crate) fn system_dots(
     player: &EntityId,
     dots_eaten: &mut [bool],
 ) {
-    let (player_tx, player_ty, mut player_component) =
-        world.with::<(&LocationComponent, &mut PlayerComponent), _, _>(player, |(loc, pc)| {
-            (tile_of(loc.location.x), tile_of(loc.location.y), pc)
-        });
+    world.with::<(
+        &LocationComponent,
+        &mut PlayerComponent,
+        &mut SpriteComponent,
+    ), _, _>(player, |(loc_comp, mut player_comp, mut sprite_comp)| {
+        let player_tx = tile_of(loc_comp.location.x);
+        let player_ty = tile_of(loc_comp.location.y);
 
-    if let Some(tile_index) = level.is_edible_dot_tile(player_tx, player_ty, dots_eaten) {
-        dots_eaten[tile_index] = true;
-    }
-    if let Some(tile_index) = level.is_edible_pellet_tile(player_tx, player_ty, dots_eaten) {
-        dots_eaten[tile_index] = true;
-        player_component.energized = true;
-    }
+        if let Some(tile_index) = level.is_edible_dot_tile(player_tx, player_ty, dots_eaten) {
+            dots_eaten[tile_index] = true;
+        }
+        if let Some(tile_index) = level.is_edible_pellet_tile(player_tx, player_ty, dots_eaten) {
+            dots_eaten[tile_index] = true;
+            player_comp.energized_time = 300;
+            sprite_comp.alt_mode = true;
+            true
+        } else {
+            false
+        }
+    });
 }
 
 /// Check collisions between ghosts and player
@@ -107,12 +142,12 @@ pub(crate) fn system_collision(
     player: &EntityId,
     ghosts: &mut Vec<EntityId>,
 ) -> GameState {
-    let (player_tx, player_ty, energized) = world
+    let (player_tx, player_ty, is_energized) = world
         .with::<(&LocationComponent, &PlayerComponent), _, _>(player, |(loc, pc)| {
             (
                 tile_of(loc.location.x),
                 tile_of(loc.location.y),
-                pc.energized,
+                pc.energized_time > 0,
             )
         });
 
@@ -122,7 +157,7 @@ pub(crate) fn system_collision(
             tile_of(loc.location.x) == player_tx && tile_of(loc.location.y) == player_ty
         });
 
-        match (collided, energized) {
+        match (collided, is_energized) {
             (true, false) => {
                 player_dead = true;
                 true

@@ -42,7 +42,12 @@ impl Component for SpeedComponent {}
 /// Marker for the player entity; used by collision and rendering systems to distinguish the crab from ghosts.
 #[derive(Clone, Copy)]
 pub struct PlayerComponent {
-    pub energized: bool,
+    pub energized_time: u32,
+}
+impl PlayerComponent {
+    pub fn is_energized(&self) -> bool {
+        self.energized_time > 0
+    }
 }
 impl Component for PlayerComponent {}
 
@@ -67,13 +72,26 @@ pub struct GhostComponent {
     // Patrol and Shy ghosts will scatter
     pub scatter_tx: i32,
     pub scatter_ty: i32,
+    // FIXME: scared mode to avoid energized player
+    // pub scared: bool
 }
 impl Component for GhostComponent {}
 
 #[derive(Clone, Copy, Debug)]
 pub struct SpriteComponent {
     pub tag: SpriteTag,
+    pub tag_alt: SpriteTag,
+    pub alt_mode: bool,
     pub offset: Vector2D<Number>,
     pub frame: u8,
+}
+impl SpriteComponent {
+    pub fn get_tag(&self) -> SpriteTag {
+        if self.alt_mode {
+            self.tag_alt
+        } else {
+            self.tag
+        }
+    }
 }
 impl Component for SpriteComponent {}

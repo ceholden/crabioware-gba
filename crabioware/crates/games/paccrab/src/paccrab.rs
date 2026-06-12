@@ -33,9 +33,11 @@ fn spawn_crab(world: &mut World, x: Number, y: Number) -> EntityId {
             desired: Direction::RIGHT,
         })
         .with(SpeedComponent(num!(0.5)))
-        .with(PlayerComponent { energized: false })
+        .with(PlayerComponent { energized_time: 0 })
         .with(SpriteComponent {
             tag: SpriteTag::Crab,
+            tag_alt: SpriteTag::SuperCrab,
+            alt_mode: false,
             offset: Vector2D {
                 x: (-4).into(),
                 y: (-4).into(),
@@ -71,7 +73,9 @@ fn spawn_ghost(
             scatter_ty,
         })
         .with(SpriteComponent {
-            tag,
+            tag: tag,
+            tag_alt: SpriteTag::GhostScared,
+            alt_mode: false,
             offset: Vector2D {
                 x: (-4).into(),
                 y: (-4).into(),
@@ -106,6 +110,8 @@ pub struct PacCrabGame<'g> {
     ghosts: Vec<EntityId>,
     rng: RandomNumberGenerator,
     time: i32,
+    // FIXME: dots remaining for win condition - set at level load time based on tile data
+    // dots_remaining: u32,
     dots_eaten: [bool; 600],
     level: Level,
     tiles: Option<Mode0TileMap<'g>>,
@@ -219,29 +225,13 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
     fn advance(&mut self, time: i32, buttons: &ButtonController) -> GameState {
         self.time += time;
 
-        // Snapshot player tile position for ghost AI before running player system
-        let (player_tx, player_ty, player_dir) =
-            self.world
-                .with::<(&LocationComponent, &DirectionComponent), _, _>(
-                    &self.player,
-                    |(loc, dir)| {
-                        (
-                            tile_of(loc.location.x),
-                            tile_of(loc.location.y),
-                            dir.direction,
-                        )
-                    },
-                );
-
-        system_player(&self.world, &self.player, &self.level, buttons);
+        system_player(&self.world, &self.level, &self.player, buttons);
         system_dots(&self.world, &self.level, &self.player, &mut self.dots_eaten);
         system_ghost(
             &self.world,
-            &self.ghosts,
             &self.level,
-            player_tx,
-            player_ty,
-            player_dir,
+            &self.ghosts,
+            &self.player,
             &mut self.rng,
         );
         system_collision(&mut self.world, &self.player, &mut self.ghosts)
@@ -260,7 +250,7 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
             .components::<(&LocationComponent, &SpriteComponent)>()
         {
             let mut object = ObjectUnmanaged::new(
-                sprite_loader.get_vram_sprite(sprite.tag.tag().sprite(sprite.frame.into())),
+                sprite_loader.get_vram_sprite(sprite.get_tag().tag().sprite(sprite.frame.into())),
             );
             object
                 .set_position((location.location + sprite.offset).floor())
