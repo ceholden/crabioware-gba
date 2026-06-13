@@ -73,7 +73,7 @@ pub struct GhostComponent {
     pub scatter_tx: i32,
     pub scatter_ty: i32,
     // FIXME: scared mode to avoid energized player
-    // pub scared: bool
+    pub scared: bool,
 }
 impl Component for GhostComponent {}
 

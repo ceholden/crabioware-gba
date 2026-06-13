@@ -68,6 +68,7 @@ fn spawn_ghost(
             kind,
             scatter_tx,
             scatter_ty,
+            scared: false,
         })
         .with(SpriteComponent {
             tag: tag,

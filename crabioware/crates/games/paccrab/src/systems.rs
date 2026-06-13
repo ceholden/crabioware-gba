@@ -88,6 +88,7 @@ pub(crate) fn system_ghost(
             |(mut location, mut direction, speed, mut ghost_comp, mut sprite_comp)| {
                 let tx = level.tile_of(location.location.x);
                 let ty = level.tile_of(location.location.y);
+                ghost_comp.scared = player_energized;
                 direction.desired = ghost_desired(
                     &mut ghost_comp,
                     tx,
