@@ -22,11 +22,20 @@ pub(crate) fn ghost_desired(
     let neighbors = open_neighbors(ghost_tx, ghost_ty, current.opposite(), |tile_x, tile_y| {
         level.is_ghost_walkable_tile(tile_x, tile_y)
     });
+
+    if ghost_comp.scared {
+        return navigate(
+            neighbors, ghost_tx, ghost_ty, player_tx, player_ty, current, -1,
+        );
+    }
+
     match &mut ghost_comp.kind {
-        GhostKind::Chase => toward(neighbors, ghost_tx, ghost_ty, player_tx, player_ty, current),
+        GhostKind::Chase => navigate(
+            neighbors, ghost_tx, ghost_ty, player_tx, player_ty, current, 1,
+        ),
         GhostKind::Ambush => {
             let (tx, ty) = ahead(player_tx, player_ty, player_dir, 4);
-            toward(neighbors, ghost_tx, ghost_ty, tx, ty, current)
+            navigate(neighbors, ghost_tx, ghost_ty, tx, ty, current, 1)
         }
         GhostKind::Shy => {
             let dist = (ghost_tx - player_tx).abs() + (ghost_ty - player_ty).abs();
@@ -35,7 +44,7 @@ pub(crate) fn ghost_desired(
             } else {
                 (scatter_tx, scatter_ty)
             };
-            toward(neighbors, ghost_tx, ghost_ty, tx, ty, current)
+            navigate(neighbors, ghost_tx, ghost_ty, tx, ty, current, 1)
         }
         GhostKind::Random => {
             let count = neighbors.into_iter().flatten().count();
@@ -62,19 +71,21 @@ pub(crate) fn ghost_desired(
             } else {
                 (scatter_tx, scatter_ty)
             };
-            toward(neighbors, ghost_tx, ghost_ty, tx, ty, current)
+            navigate(neighbors, ghost_tx, ghost_ty, tx, ty, current, 1)
         }
     }
 }
 
 /// Pick the neighbor direction with minimum Manhattan distance to `(target_tx, target_ty)`.
-fn toward(
+/// Provide `sign = 1` to move _towards_ the target, or `sign = -1` to flee.
+fn navigate(
     neighbors: [Option<Direction>; 4],
     ghost_tx: i32,
     ghost_ty: i32,
     target_tx: i32,
     target_ty: i32,
     fallback: Direction,
+    sign: i32,
 ) -> Direction {
     neighbors
         .into_iter()
@@ -86,7 +97,7 @@ fn toward(
                 Direction::UP => (ghost_tx, ghost_ty - 1),
                 Direction::DOWN => (ghost_tx, ghost_ty + 1),
             };
-            (nx - target_tx).abs() + (ny - target_ty).abs()
+            sign * ((nx - target_tx).abs() + (ny - target_ty).abs())
         })
         .unwrap_or(fallback)
 }
