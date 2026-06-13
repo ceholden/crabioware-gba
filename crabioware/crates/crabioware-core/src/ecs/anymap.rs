@@ -10,7 +10,6 @@ use hashbrown::HashMap;
 /// into GBA memory registers. We'll only have maybe 10-30 components ever, so a u8 would
 /// be sufficient and match our CPU instructions much better
 
-
 /// FIXME: should we also use `agb_hashmap::HashMap` instead of the one from `hashbrown`?
 
 // A trivial hasher for TypeId -- TypeId is already a well-distributed integer,
