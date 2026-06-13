@@ -58,7 +58,7 @@ impl Level {
     pub fn is_edible_pellet_tile(&self, tile_x: i32, tile_y: i32, eaten: &[bool]) -> Option<usize> {
         self.tile_index(tile_x, tile_y)
             .map(|i| {
-                if self.dots[i] == tilemaps::tilemap::PELLET as u8 && !eaten[i] {
+                if self.dots[i] == tilemaps::tileset::PELLET_TILE_ID as u8 && !eaten[i] {
                     Some(i)
                 } else {
                     None
@@ -70,7 +70,7 @@ impl Level {
     pub fn is_edible_dot_tile(&self, tile_x: i32, tile_y: i32, eaten: &[bool]) -> Option<usize> {
         self.tile_index(tile_x, tile_y)
             .map(|i| {
-                if self.dots[i] == tilemaps::tilemap::DOT as u8 && !eaten[i] {
+                if self.dots[i] == tilemaps::tileset::DOT_TILE_ID as u8 && !eaten[i] {
                     Some(i)
                 } else {
                     None
@@ -90,14 +90,14 @@ impl Level {
     /// Are we inside the ghost house?
     fn is_ghost_house_tile(&self, tile_x: i32, tile_y: i32) -> bool {
         self.tile_index(tile_x, tile_y)
-            .map(|i| self.path[i] == tilemaps::tilemap::GHOST as u8)
+            .map(|i| self.path[i] == tilemaps::tileset::GHOST_TILE_ID as u8)
             .unwrap_or(false)
     }
 
     /// Can the player walk on this tile?
     pub fn is_walkable_tile(&self, tile_x: i32, tile_y: i32) -> bool {
         self.tile_index(tile_x, tile_y)
-            .map(|i| self.path[i] == tilemaps::tilemap::PATH as u8)
+            .map(|i| self.path[i] == tilemaps::tileset::PATH_TILE_ID as u8)
             .unwrap_or(false)
     }
 
@@ -107,8 +107,8 @@ impl Level {
             None => false,
             Some(i) => {
                 let t = self.path[i];
-                t == tilemaps::tilemap::PATH as u8
-                    || t == tilemaps::tilemap::GHOST as u8
+                t == tilemaps::tileset::PATH_TILE_ID as u8
+                    || t == tilemaps::tileset::GHOST_TILE_ID as u8
                     || self.is_door_tile(tile_x as u8, tile_y as u8)
             }
         }
@@ -139,8 +139,8 @@ impl Levels {
 
 pub mod tilemaps {
 
-    pub mod tilemap {
-        include!(concat!(env!("OUT_DIR"), "/tilemap.rs"));
+    pub mod tileset {
+        include!(concat!(env!("OUT_DIR"), "/tileset.rs"));
     }
 
     pub mod level_1 {

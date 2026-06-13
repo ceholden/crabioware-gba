@@ -16,7 +16,7 @@ use super::components::{
     SpeedComponent, SpriteComponent,
 };
 use super::graphics::SpriteTag;
-use super::levels::{tilemaps::tilemap, Level, Levels};
+use super::levels::{tilemaps::tileset, Level, Levels};
 use super::systems::{system_collision, system_dots, system_ghost, system_player};
 
 fn spawn_crab(world: &mut World, x: Number, y: Number) -> EntityId {
@@ -109,16 +109,13 @@ fn spawn_world(world: &mut World, level: &Level) {
 }
 
 fn render_walls(level: &Level, bg: &mut MapLoan<'_, RegularMap>, vram: &mut VRamManager) {
-    let tileset = level.get_tileset();
+    let gfx_tileset = level.get_tileset();
     for y in 0..level.dimensions.y as u16 {
         for x in 0..level.dimensions.x as u16 {
-            let tile_id = level.walls[(y as u32 * level.dimensions.x + x as u32) as usize] - 1;
-            bg.set_tile(
-                vram,
-                (x, y),
-                &tileset,
-                level.get_tilesetting(tile_id as usize),
-            );
+            let tile_id = level.walls[(y as u32 * level.dimensions.x + x as u32) as usize];
+            if tile_id != 0xFF {
+                bg.set_tile(vram, (x, y), &gfx_tileset, level.get_tilesetting(tile_id as usize));
+            }
         }
     }
     bg.commit(vram);
@@ -126,17 +123,21 @@ fn render_walls(level: &Level, bg: &mut MapLoan<'_, RegularMap>, vram: &mut VRam
 }
 
 fn render_dots(level: &Level, bg: &mut MapLoan<'_, RegularMap>, vram: &mut VRamManager) {
-    let tileset = level.get_tileset();
+    let gfx_tileset = level.get_tileset();
     for y in 0..level.dimensions.y as u16 {
         for x in 0..level.dimensions.x as u16 {
             let tile_id = level.dots[(y as u32 * level.dimensions.x + x as u32) as usize];
             let tilesetting = match tile_id {
-                t if t == tilemap::DOT as u8 => Some(level.get_tilesetting(tilemap::DOT_GID)),
-                t if t == tilemap::PELLET as u8 => Some(level.get_tilesetting(tilemap::PELLET_GID)),
+                t if t == tileset::DOT_TILE_ID as u8 => {
+                    Some(level.get_tilesetting(tileset::DOT_TILE_ID))
+                }
+                t if t == tileset::PELLET_TILE_ID as u8 => {
+                    Some(level.get_tilesetting(tileset::PELLET_TILE_ID))
+                }
                 _ => None,
             };
             if let Some(tilesetting) = tilesetting {
-                bg.set_tile(vram, (x, y), &tileset, tilesetting);
+                bg.set_tile(vram, (x, y), &gfx_tileset, tilesetting);
             }
         }
     }
