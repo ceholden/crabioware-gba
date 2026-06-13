@@ -115,7 +115,12 @@ fn render_walls(level: &Level, bg: &mut MapLoan<'_, RegularMap>, vram: &mut VRam
         for x in 0..level.dimensions.x as u16 {
             let tile_id = level.walls[(y as u32 * level.dimensions.x + x as u32) as usize];
             if tile_id != 0xFF {
-                bg.set_tile(vram, (x, y), &gfx_tileset, level.get_tilesetting(tile_id as usize));
+                bg.set_tile(
+                    vram,
+                    (x, y),
+                    &gfx_tileset,
+                    level.get_tilesetting(tile_id as usize),
+                );
             }
         }
     }
@@ -288,6 +293,7 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
             &self.player,
             &mut self.rng,
         );
+
         // FIXME: return dead ghosts here so we can put them into some reincarnation queue
         let player_dead =
             system_collision(&mut self.world, &self.level, &self.player, &mut self.ghosts);

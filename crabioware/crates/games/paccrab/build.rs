@@ -11,16 +11,11 @@ fn main() {
 
     let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR environment variable must be specified");
 
-    let type_name_to_tile_id =
-        tiled_export::export_tileset(&out_dir, "assets/tileset.json")
-            .expect("Failed to export tileset");
+    let type_name_to_tile_id = tiled_export::export_tileset(&out_dir, "assets/tileset.json")
+        .expect("Failed to export tileset");
     for &level in LEVELS {
-        tiled_export::export_level(
-            &out_dir,
-            Path::new(level),
-            &type_name_to_tile_id,
-        )
-        .expect("Failed to export level");
+        tiled_export::export_level(&out_dir, Path::new(level), &type_name_to_tile_id)
+            .expect("Failed to export level");
     }
 }
 
@@ -162,10 +157,17 @@ mod tiled_export {
         writeln!(&mut writer, "// Level data for {filename}")?;
         writeln!(&mut writer, "const WIDTH: u32 = {};", level.width)?;
         writeln!(&mut writer, "const HEIGHT: u32 = {};", level.height)?;
-        writeln!(&mut writer, "const TILE_SIZE_PIXELS: u8 = {};", TILE_SIZE_PIXELS)?;
+        writeln!(
+            &mut writer,
+            "const TILE_SIZE_PIXELS: u8 = {};",
+            TILE_SIZE_PIXELS
+        )?;
         writeln!(&mut writer, "const TOTAL_DOTS: usize = {total_dots};")?;
 
-        writeln!(&mut writer, "// Tile layers (0-based tile_id; 0xFF = empty)")?;
+        writeln!(
+            &mut writer,
+            "// Tile layers (0-based tile_id; 0xFF = empty)"
+        )?;
         for (name, data) in tile_layers.iter() {
             let data_str = data.iter().map(|t| t.to_string()).join(", ");
             writeln!(
