@@ -10,10 +10,6 @@
  "tileheight":8,
  "tiles":[
         {
-         "id":0,
-         "type":"Wall"
-        }, 
-        {
          "id":1,
          "type":"Wall"
         }, 
@@ -39,11 +35,11 @@
         }, 
         {
          "id":7,
-         "type":"Ghost"
+         "type":"Wall"
         }, 
         {
          "id":8,
-         "type":"Wall"
+         "type":"Ghost"
         }, 
         {
          "id":9,
@@ -107,11 +103,11 @@
         }, 
         {
          "id":24,
-         "type":"Door"
+         "type":"Wall"
         }, 
         {
          "id":25,
-         "type":"Wall"
+         "type":"Gate"
         }, 
         {
          "id":26,
@@ -143,7 +139,7 @@
         }, 
         {
          "id":33,
-         "type":"Ghost"
+         "type":"Wall"
         }, 
         {
          "id":34,
@@ -151,15 +147,15 @@
         }, 
         {
          "id":35,
-         "type":"Berry"
+         "type":"Ghost"
         }, 
         {
          "id":36,
-         "type":"Warp_A"
+         "type":"Berry"
         }, 
         {
          "id":37,
-         "type":"Path"
+         "type":"Warp"
         }, 
         {
          "id":38,
