@@ -294,7 +294,7 @@ fn system_cpu_acquire_target(
     }
 
     // FIXME: closest.. that we can reach
-    if incoming.len() > 0 {
+    if !incoming.is_empty() {
         incoming.sort_by(|(a, ..), (b, ..)| a.cmp(b));
         let (eta, entity, position, velocity) = incoming[0];
         if eta < num!(180.) {
