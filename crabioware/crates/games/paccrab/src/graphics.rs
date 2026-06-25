@@ -11,6 +11,7 @@ static GHOST_PINK: &Tag = SPRITES.tags().get("pink");
 static GHOST_YELLOW: &Tag = SPRITES.tags().get("yellow");
 static GHOST_BLUE: &Tag = SPRITES.tags().get("blue");
 static GHOST_ORANGE: &Tag = SPRITES.tags().get("orange");
+static GHOST_RED: &Tag = SPRITES.tags().get("red");
 static GHOST_SCARED: &Tag = SPRITES.tags().get("scared");
 static BERRY: &Tag = SPRITES.tags().get("berry");
 static WARP: &Tag = SPRITES.tags().get("warp");
@@ -23,6 +24,7 @@ pub enum SpriteTag {
     GhostYellow,
     GhostBlue,
     GhostOrange,
+    GhostRed,
     GhostScared,
     Berry,
     Warp,
@@ -36,6 +38,7 @@ impl SpriteTag {
             SpriteTag::GhostYellow => GHOST_YELLOW,
             SpriteTag::GhostBlue => GHOST_BLUE,
             SpriteTag::GhostOrange => GHOST_ORANGE,
+            SpriteTag::GhostRed => GHOST_RED,
             SpriteTag::GhostScared => GHOST_SCARED,
             SpriteTag::Berry => BERRY,
             SpriteTag::Warp => WARP,

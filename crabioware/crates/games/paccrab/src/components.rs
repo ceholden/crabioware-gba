@@ -1,4 +1,5 @@
 use agb::fixnum::Vector2D;
+use agb::rng::RandomNumberGenerator;
 use crabioware_core::ecs::Component;
 use crabioware_core::types::Number;
 
@@ -65,6 +66,32 @@ pub enum GhostKind {
         chasing: bool,
     },
 }
+impl GhostKind {
+    pub fn random(rng: &mut RandomNumberGenerator) -> GhostKind {
+        match rng.gen().rem_euclid(5) {
+            0 => GhostKind::Chase,
+            1 => GhostKind::Ambush,
+            2 => GhostKind::Shy,
+            3 => GhostKind::Random,
+            _ => GhostKind::Patrol {
+                chase_ticks: 40 + rng.gen().rem_euclid(80) as u32,
+                shy_ticks: 20 + rng.gen().rem_euclid(40) as u32,
+                timer: 0,
+                chasing: true,
+            },
+        }
+    }
+
+    pub fn tag(&self) -> SpriteTag {
+        match self {
+            GhostKind::Chase => SpriteTag::GhostPink,
+            GhostKind::Ambush => SpriteTag::GhostYellow,
+            GhostKind::Shy => SpriteTag::GhostBlue,
+            GhostKind::Random => SpriteTag::GhostOrange,
+            GhostKind::Patrol { .. } => SpriteTag::GhostRed,
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct GhostComponent {
@@ -72,7 +99,6 @@ pub struct GhostComponent {
     // Patrol and Shy ghosts will scatter
     pub scatter_tx: i32,
     pub scatter_ty: i32,
-    // FIXME: scared mode to avoid energized player
     pub scared: bool,
 }
 impl Component for GhostComponent {}

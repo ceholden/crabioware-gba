@@ -44,15 +44,40 @@ fn spawn_crab(world: &mut World, x: Number, y: Number) -> EntityId {
         .build()
 }
 
+struct GhostArchetype {
+    kind: GhostKind,
+    tag: SpriteTag,
+    scatter_tx: i32,
+    scatter_ty: i32,
+}
+
+fn build_ghost_archetype(rng: &mut RandomNumberGenerator, level: &Level) -> GhostArchetype {
+    let kind = GhostKind::random(rng);
+    let tag = kind.tag();
+    let scatter_tx = if rng.gen() >= 0 {
+        1
+    } else {
+        level.dimensions.x as i32 - 2
+    };
+    let scatter_ty = if rng.gen() >= 0 {
+        1
+    } else {
+        level.dimensions.y as i32 - 2
+    };
+    GhostArchetype {
+        kind,
+        tag,
+        scatter_tx,
+        scatter_ty,
+    }
+}
+
 fn spawn_ghost(
     world: &mut World,
     x: Number,
     y: Number,
-    kind: GhostKind,
     start_dir: Direction,
-    scatter_tx: i32,
-    scatter_ty: i32,
-    tag: SpriteTag,
+    archetype: GhostArchetype,
 ) -> EntityId {
     world
         .create()
@@ -65,13 +90,13 @@ fn spawn_ghost(
         })
         .with(SpeedComponent(num!(0.5)))
         .with(GhostComponent {
-            kind,
-            scatter_tx,
-            scatter_ty,
+            kind: archetype.kind,
+            scatter_tx: archetype.scatter_tx,
+            scatter_ty: archetype.scatter_ty,
             scared: false,
         })
         .with(SpriteComponent {
-            tag: tag,
+            tag: archetype.tag,
             tag_alt: SpriteTag::GhostScared,
             alt_mode: false,
             offset: Vector2D {
@@ -192,38 +217,13 @@ impl<'g> PacCrabGame<'g> {
         let ghosts: Vec<EntityId> = level
             .ghosts
             .iter()
-            .zip([
-                (GhostKind::Chase, Direction::UP, 1, 1, SpriteTag::GhostPink),
-                (
-                    GhostKind::Ambush,
-                    Direction::UP,
-                    28,
-                    1,
-                    SpriteTag::GhostYellow,
-                ),
-                (
-                    GhostKind::Patrol {
-                        chase_ticks: 120,
-                        shy_ticks: 60,
-                        timer: 0,
-                        chasing: false,
-                    },
-                    Direction::UP,
-                    1,
-                    18,
-                    SpriteTag::GhostOrange,
-                ),
-            ])
-            .map(|(&(x, y), (kind, dir, stx, sty, tag))| {
+            .map(|&(x, y)| {
                 spawn_ghost(
                     &mut world,
                     Number::new(x as i32 * level.tile_size as i32),
                     Number::new(y as i32 * level.tile_size as i32),
-                    kind,
-                    dir,
-                    stx,
-                    sty,
-                    tag,
+                    Direction::UP,
+                    build_ghost_archetype(rng),
                 )
             })
             .collect();
