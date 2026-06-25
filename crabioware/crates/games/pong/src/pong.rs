@@ -102,9 +102,10 @@ impl Ball {
             Side::LEFT => -1,
             Side::RIGHT => 1,
         };
+        let y_sign: i32 = if rng.gen() % 2 == 0 { 1 } else { -1 };
         let velocity = Vector2D::<Number>::new(
             (x_sign * rng.gen().rem_euclid(5) + x_sign * 5).into(),
-            (x_sign * rng.gen().rem_euclid(5) + x_sign * 5).into(),
+            (y_sign * rng.gen().rem_euclid(5) + y_sign * 5).into(),
         ) / num!(10.);
 
         Self {
