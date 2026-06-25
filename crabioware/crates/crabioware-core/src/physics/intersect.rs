@@ -60,7 +60,7 @@ impl<const N: usize> Intersects<FixedNum<N>> for Rect<FixedNum<N>> {
                 true => SeparationResult {
                     separation: intersection.size,
                     normal: Vector2D {
-                        x: self.size.x,
+                        x: num!(1.),
                         y: num!(0.0),
                     },
                     distance: num!(1.0),
