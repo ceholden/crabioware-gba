@@ -452,7 +452,8 @@ fn system_bounds(
     )>(balls)
     {
         if (location.position.y < zero && velocity.velocity.y < zero)
-            || (location.position.y + collision.collision.size.y > GBA_HEIGHT.into()
+            || (location.position.y + collision.collision.position.y + collision.collision.size.y
+                > GBA_HEIGHT.into()
                 && velocity.velocity.y > zero)
         {
             velocity.velocity.y *= num!(-1.0)
