@@ -555,41 +555,6 @@ impl<'g> PongGame<'g> {
             tiles: None,
         }
     }
-    fn renderer_digits(
-        &self,
-        loader: &mut SpriteLoader,
-        oam: &mut OamIterator,
-        score: u8,
-        side: Side,
-    ) {
-        // FIXME: refactor into some commonly useful score screen
-        // FIXMEx2: isn't there a background layer for stuff like this?
-        let digits: Vec<u8> = match score {
-            0 => vec![0u8],
-            _ => {
-                let mut digits: Vec<u8> = Vec::new();
-                let mut score_ = score.clone();
-                while score_ != 0 {
-                    digits.push(score_ % 10);
-                    score_ /= 10;
-                }
-                digits
-            }
-        };
-
-        let x0: u16 = match side {
-            Side::LEFT => GBA_WIDTH / 2 - 16,
-            Side::RIGHT => GBA_WIDTH / 2 + 16,
-        } as u16;
-        for (i, digit) in digits.iter().rev().enumerate() {
-            let sprite_tag = SpriteTag::Numbers.tag().sprite(*digit as usize);
-            let mut object = ObjectUnmanaged::new(loader.get_vram_sprite(sprite_tag));
-            object.set_x(x0 + 4 * i as u16).set_y(8).show();
-            if let Some(slot) = oam.next() {
-                slot.set(&object);
-            }
-        }
-    }
 }
 
 impl<'g> Game<'g> for PongGame<'g> {
@@ -639,19 +604,19 @@ impl<'g> Game<'g> for PongGame<'g> {
     // TODO: split into 2 steps - create sprite objects & then render according to z-axis
     fn render(
         &mut self,
-        vram: &mut VRamManager,
+        _vram: &mut VRamManager,
         unmanaged: &mut OamUnmanaged,
         sprite_loader: &mut SpriteLoader,
     ) -> Option<()> {
         let mut oam = unmanaged.iter();
 
-        self.renderer_digits(
+        renderer_digits(
             sprite_loader,
             &mut oam,
             self.game_state.player_score,
             Side::LEFT,
         );
-        self.renderer_digits(
+        renderer_digits(
             sprite_loader,
             &mut oam,
             self.game_state.opponent_score,
@@ -677,5 +642,35 @@ impl<'g> Game<'g> for PongGame<'g> {
             oam.next()?.set(&object);
         }
         Some(())
+    }
+}
+
+fn renderer_digits(loader: &mut SpriteLoader, oam: &mut OamIterator, score: u8, side: Side) {
+    // FIXME: refactor into some commonly useful score screen
+    // FIXMEx2: isn't there a background layer for stuff like this?
+    let digits: Vec<u8> = match score {
+        0 => vec![0u8],
+        _ => {
+            let mut digits: Vec<u8> = Vec::new();
+            let mut score_ = score;
+            while score_ != 0 {
+                digits.push(score_ % 10);
+                score_ /= 10;
+            }
+            digits
+        }
+    };
+
+    let x0: u16 = match side {
+        Side::LEFT => GBA_WIDTH / 2 - 16,
+        Side::RIGHT => GBA_WIDTH / 2 + 16,
+    } as u16;
+    for (i, digit) in digits.iter().rev().enumerate() {
+        let sprite_tag = SpriteTag::Numbers.tag().sprite(*digit as usize);
+        let mut object = ObjectUnmanaged::new(loader.get_vram_sprite(sprite_tag));
+        object.set_x(x0 + 4 * i as u16).set_y(8).show();
+        if let Some(slot) = oam.next() {
+            slot.set(&object);
+        }
     }
 }
