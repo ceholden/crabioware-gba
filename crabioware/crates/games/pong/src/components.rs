@@ -12,7 +12,7 @@ use super::graphics::SpriteTag;
 pub struct SpriteComponent {
     pub tag: SpriteTag,
     pub offset: Vector2D<Number>,
-    // FIXME: add frame number, or use a separate "AnimationComponent"?
+    // FIXME: if we have animation frames we probably need some timer
     pub frame: u8,
 }
 impl Component for SpriteComponent {}
@@ -21,6 +21,8 @@ impl Component for SpriteComponent {}
 #[derive(Debug, Default)]
 pub struct LocationComponent {
     pub position: Vector2D<Number>,
+    // FIXME: avoid rendering non-rotated sprites w/o checking if angle is 0
+    // perhaps by splitting this out
     pub angle: Number,
 }
 impl LocationComponent {
@@ -78,14 +80,3 @@ pub struct CollisionComponent {
     pub inv_mass: Number,
 }
 impl Component for CollisionComponent {}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct PhysicsComponent {
-    pub position: Vector2D<Number>,
-    pub angle: Number,
-    pub velocity: Vector2D<Number>,
-    pub rotation: Number,
-    pub inv_mass: Number, // 1/mass is used for calculations, so do it once
-    pub bounce: Number,
-}
-impl Component for PhysicsComponent {}

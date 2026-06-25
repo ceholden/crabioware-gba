@@ -19,7 +19,6 @@ use alloc::vec::Vec;
 use crabioware_core::games::{Game, GameDifficulty};
 use crabioware_core::graphics::{GraphicsResource, Mode1TileMap, TileMapResource, TileMode};
 use crabioware_core::physics::Intersects;
-use crabioware_core::types::VecMath;
 use crabioware_core::types::{Number, Rect, RectMath, Vector2D};
 use crabioware_core::{
     ecs::{EntityId, World},
@@ -68,13 +67,7 @@ impl GameStateResource {
 }
 impl Default for GameStateResource {
     fn default() -> Self {
-        Self {
-            player_score: 0,
-            opponent_score: 0,
-            max_score: 10,
-            max_speed: MaxSpeed::default(),
-            spawn: Side::LEFT,
-        }
+        Self::new(&GameDifficulty::EASY)
     }
 }
 
