@@ -94,6 +94,7 @@ fn spawn_ghost(
             scatter_tx: archetype.scatter_tx,
             scatter_ty: archetype.scatter_ty,
             scared: false,
+            exited: false,
         })
         .with(SpriteComponent {
             tag: archetype.tag,
@@ -223,7 +224,7 @@ impl<'g> PacCrabGame<'g> {
                     Number::new(x as i32 * level.tile_size as i32),
                     Number::new(y as i32 * level.tile_size as i32),
                     Direction::UP,
-                    build_ghost_archetype(rng),
+                    build_ghost_archetype(rng, &level),
                 )
             })
             .collect();
@@ -336,17 +337,19 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
             oam.next()?.set(&object);
         }
 
-        // Clear dots/pellet tiles that have been eaten
+
         if let Some(ref mut tiles) = self.tiles {
             let tileset = self.level.get_tileset();
-            for &i in &self.dots_dirty {
+
+            // Clear dots/pellet tiles that have been eaten
+            for i in self.dots_dirty.drain(..) {
                 let x = (i % self.level.dimensions.x as usize) as u16;
                 let y = (i / self.level.dimensions.x as usize) as u16;
                 tiles
                     .bg2
                     .set_tile(vram, (x, y), &tileset, TileSetting::BLANK);
             }
-            self.dots_dirty.clear();
+
             tiles.bg2.commit(vram);
         }
 

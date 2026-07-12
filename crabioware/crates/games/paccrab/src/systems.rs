@@ -101,15 +101,24 @@ pub(crate) fn system_ghost(
                     rng,
                 );
 
-                // FIXME: ghosts shouldn't move into house _after_ first exit
-                apply_movement(
+                let (ghost_tx, ghost_ty) = apply_movement(
                     &mut location,
                     &mut direction,
                     speed.0,
                     level.tile_size as i32,
-                    |tile_x, tile_y| level.is_ghost_walkable_tile(tile_x, tile_y),
+                    |tile_x, tile_y| {
+                        level.is_ghost_walkable_tile(tile_x, tile_y)
+                            || (!ghost_comp.exited
+                                && level.is_door_tile(tile_x as u8, tile_y as u8))
+                    },
                     |tile_x, tile_y| level.warp_destination(tile_x, tile_y),
                 );
+
+                if !ghost_comp.exited {
+                    if level.is_walkable_tile(ghost_tx, ghost_ty) {
+                        ghost_comp.exited = true;
+                    }
+                }
 
                 sprite_comp.alt_mode = player_energized;
             },

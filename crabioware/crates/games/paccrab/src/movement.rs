@@ -81,7 +81,8 @@ pub(crate) fn apply_movement<FWalk, FWarp>(
     tile_size: i32,
     fn_walk: FWalk,
     fn_warp: FWarp,
-) where
+) -> (i32, i32)
+where
     FWalk: Fn(i32, i32) -> bool,
     FWarp: Fn(i32, i32) -> Option<(Number, Number)>,
 {
@@ -189,4 +190,6 @@ pub(crate) fn apply_movement<FWalk, FWarp>(
             }
         }
     }
+
+    (tx, ty)
 }

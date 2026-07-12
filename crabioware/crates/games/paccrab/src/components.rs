@@ -100,6 +100,7 @@ pub struct GhostComponent {
     pub scatter_tx: i32,
     pub scatter_ty: i32,
     pub scared: bool,
+    pub exited: bool,
 }
 impl Component for GhostComponent {}
 

@@ -80,7 +80,7 @@ impl Level {
     }
 
     /// Is this the door to the ghost house?
-    fn is_door_tile(&self, tile_x: u8, tile_y: u8) -> bool {
+    pub fn is_door_tile(&self, tile_x: u8, tile_y: u8) -> bool {
         self.doors
             .iter()
             .copied()
@@ -109,7 +109,6 @@ impl Level {
                 let t = self.path[i];
                 t == tilemaps::tileset::PATH_TILE_ID as u8
                     || t == tilemaps::tileset::GHOST_TILE_ID as u8
-                    || self.is_door_tile(tile_x as u8, tile_y as u8)
             }
         }
     }
