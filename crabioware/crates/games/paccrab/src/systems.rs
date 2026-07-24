@@ -4,6 +4,7 @@ use alloc::vec::Vec;
 use crabioware_core::ecs::{EntityId, World};
 
 use crate::components::{PlayerComponent, SpriteComponent};
+use crate::paccrab::GateState;
 
 use super::ai::ghost_desired;
 use super::components::{
@@ -60,6 +61,7 @@ pub(crate) fn system_ghost(
     level: &Level,
     ghosts: &[EntityId],
     player: &EntityId,
+    gate_state: &GateState,
     rng: &mut RandomNumberGenerator,
 ) {
     // Snapshot player tile position for ghost AI before running player system
@@ -86,9 +88,10 @@ pub(crate) fn system_ghost(
         ), _, _>(
             ghost,
             |(mut location, mut direction, speed, mut ghost_comp, mut sprite_comp)| {
+                ghost_comp.scared = player_energized;
+
                 let tx = level.tile_of(location.location.x);
                 let ty = level.tile_of(location.location.y);
-                ghost_comp.scared = player_energized;
                 direction.desired = ghost_desired(
                     &mut ghost_comp,
                     tx,
@@ -101,22 +104,25 @@ pub(crate) fn system_ghost(
                     rng,
                 );
 
-                let (ghost_tx, ghost_ty) = apply_movement(
-                    &mut location,
-                    &mut direction,
-                    speed.0,
-                    level.tile_size as i32,
-                    |tile_x, tile_y| {
-                        level.is_ghost_walkable_tile(tile_x, tile_y)
-                            || (!ghost_comp.exited
-                                && level.is_door_tile(tile_x as u8, tile_y as u8))
-                    },
-                    |tile_x, tile_y| level.warp_destination(tile_x, tile_y),
-                );
+                if ghost_comp.can_exit || ghost_comp.exited {
+                    let (ghost_tx, ghost_ty) = apply_movement(
+                        &mut location,
+                        &mut direction,
+                        speed.0,
+                        level.tile_size as i32,
+                        |tile_x, tile_y| {
+                            level.is_ghost_walkable_tile(tile_x, tile_y)
+                                || (gate_state.gate_open
+                                    && ghost_comp.can_exit
+                                    && level.is_door_tile(tile_x as u8, tile_y as u8))
+                        },
+                        |tile_x, tile_y| level.warp_destination(tile_x, tile_y),
+                    );
 
-                if !ghost_comp.exited {
-                    if level.is_walkable_tile(ghost_tx, ghost_ty) {
-                        ghost_comp.exited = true;
+                    if !ghost_comp.exited {
+                        if level.is_walkable_tile(ghost_tx, ghost_ty) {
+                            ghost_comp.exited = true;
+                        }
                     }
                 }
 
@@ -124,6 +130,25 @@ pub(crate) fn system_ghost(
             },
         );
     }
+}
+
+/// Gate open/close logic
+pub(crate) fn system_gate(world: &World, gate_state: &mut GateState, dots_remaining: usize) {
+    gate_state.gate_open = false;
+
+    gate_state.exit_queue.retain(|ghost| {
+        world.with::<(&mut GhostComponent,), _, _>(&ghost, |(mut gc,)| {
+            if gc.exited {
+                gc.can_exit = false;
+                return false;
+            }
+            gc.can_exit = !gate_state.gate_open && dots_remaining <= gc.exit_threshold;
+            if gc.can_exit {
+                gate_state.gate_open = true;
+            }
+            true
+        })
+    });
 }
 
 /// Player <> dots & pellets
@@ -158,13 +183,19 @@ pub(crate) fn system_dots(
     });
 }
 
+pub(crate) enum CollisionResult {
+    None,
+    PlayerDied,
+    GhostDied(usize), // count of ghosts that died
+}
+
 /// Check collisions between ghosts and player, returning true if player has died
 pub(crate) fn system_collision(
     world: &mut World,
     level: &Level,
     player: &EntityId,
     ghosts: &mut Vec<EntityId>,
-) -> bool {
+) -> CollisionResult {
     let (player_tx, player_ty, is_energized) = world
         .with::<(&LocationComponent, &PlayerComponent), _, _>(player, |(loc, pc)| {
             (
@@ -175,8 +206,9 @@ pub(crate) fn system_collision(
         });
 
     let mut player_dead = false;
+    let mut ghosts_died = 0;
     ghosts.retain(|ghost| {
-        let collided = world.with::<(&LocationComponent), _, _>(ghost, |loc| {
+        let collided = world.with::<&LocationComponent, _, _>(ghost, |loc| {
             level.tile_of(loc.location.x) == player_tx && level.tile_of(loc.location.y) == player_ty
         });
 
@@ -187,11 +219,18 @@ pub(crate) fn system_collision(
             }
             (true, true) => {
                 world.destroy(ghost);
+                ghosts_died += 1;
                 false
             }
             _ => true,
         }
     });
 
-    player_dead
+    if player_dead {
+        CollisionResult::PlayerDied
+    } else if ghosts_died > 0 {
+        CollisionResult::GhostDied(ghosts_died)
+    } else {
+        CollisionResult::None
+    }
 }

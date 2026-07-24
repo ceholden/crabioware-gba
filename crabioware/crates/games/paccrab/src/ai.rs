@@ -21,8 +21,24 @@ pub(crate) fn ghost_desired(
     let scatter_ty = ghost_comp.scatter_ty;
     let neighbors = open_neighbors(ghost_tx, ghost_ty, current.opposite(), |tile_x, tile_y| {
         level.is_ghost_walkable_tile(tile_x, tile_y)
+            || (ghost_comp.can_exit && level.is_door_tile(tile_x as u8, tile_y as u8))
     });
 
+    // navigate towards doors
+    if ghost_comp.can_exit && !ghost_comp.exited {
+        let (door_tx, door_ty) = level.doors[0];
+        return navigate(
+            neighbors,
+            ghost_tx,
+            ghost_ty,
+            door_tx as i32,
+            door_ty as i32 - 1, // one row above the door tile
+            current,
+            1,
+        );
+    }
+
+    // run away from players
     if ghost_comp.scared {
         return navigate(
             neighbors, ghost_tx, ghost_ty, player_tx, player_ty, current, -1,

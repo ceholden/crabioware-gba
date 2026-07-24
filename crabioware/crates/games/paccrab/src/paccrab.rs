@@ -11,6 +11,8 @@ use crabioware_core::games::{Game, GameDifficulty, GameState, Games};
 use crabioware_core::graphics::{GraphicsResource, Mode0TileMap, TileMapResource, TileMode};
 use crabioware_core::types::Number;
 
+use crate::systems::{CollisionResult, system_gate};
+
 use super::components::{
     Direction, DirectionComponent, GhostComponent, GhostKind, LocationComponent, PlayerComponent,
     SpeedComponent, SpriteComponent,
@@ -77,6 +79,7 @@ fn spawn_ghost(
     x: Number,
     y: Number,
     start_dir: Direction,
+    exit_threshold: usize,
     archetype: GhostArchetype,
 ) -> EntityId {
     world
@@ -95,6 +98,8 @@ fn spawn_ghost(
             scatter_ty: archetype.scatter_ty,
             scared: false,
             exited: false,
+            exit_threshold: exit_threshold,
+            can_exit: false,
         })
         .with(SpriteComponent {
             tag: archetype.tag,
@@ -150,8 +155,6 @@ fn render_walls(level: &Level, bg: &mut MapLoan<'_, RegularMap>, vram: &mut VRam
             }
         }
     }
-    bg.commit(vram);
-    bg.set_visible(true);
 }
 
 fn render_dots(level: &Level, bg: &mut MapLoan<'_, RegularMap>, vram: &mut VRamManager) {
@@ -173,8 +176,37 @@ fn render_dots(level: &Level, bg: &mut MapLoan<'_, RegularMap>, vram: &mut VRamM
             }
         }
     }
-    bg.commit(vram);
-    bg.set_visible(true);
+}
+
+fn render_gate(
+    gate_open: bool,
+    level: &Level,
+    bg: &mut MapLoan<'_, RegularMap>,
+    vram: &mut VRamManager,
+) {
+    let gfx_tileset = level.get_tileset();
+    let tile_setting = if gate_open {
+        TileSetting::BLANK
+    } else {
+        level.get_tilesetting(tileset::GATE_TILE_ID)
+    };
+    for &(dx, dy) in level.doors {
+        bg.set_tile(vram, (dx as u16, dy as u16), &gfx_tileset, tile_setting);
+    }
+}
+
+pub struct GateState {
+    pub exit_queue: Vec<EntityId>,
+    pub gate_open: bool,
+}
+impl GateState {
+    fn new(ghosts: &Vec<EntityId>) -> GateState {
+        let exit_queue: Vec<EntityId> = ghosts.clone();
+        GateState {
+            exit_queue,
+            gate_open: false,
+        }
+    }
 }
 
 pub struct PacCrabGame<'g> {
@@ -187,6 +219,8 @@ pub struct PacCrabGame<'g> {
     dots_remaining: usize,
     dots_eaten: [bool; 600],
     dots_dirty: Vec<usize>,
+    gate_state: GateState,
+    respawn_queue: Vec<(usize, usize)>, // timer and ghost spawn spot
     level: Level,
     tiles: Option<Mode0TileMap<'g>>,
 }
@@ -210,26 +244,29 @@ impl<'g> PacCrabGame<'g> {
         let level = Levels::LEVEL_1.get_level();
         let player = spawn_crab(
             &mut world,
-            Number::new(level.spawn.0 as i32 * level.tile_size as i32),
-            Number::new(level.spawn.1 as i32 * level.tile_size as i32),
+            level.tile_center(level.spawn.0 as i32),
+            level.tile_center(level.spawn.1 as i32),
         );
 
-        // TODO: exit gate and logic
         let ghosts: Vec<EntityId> = level
             .ghosts
             .iter()
-            .map(|&(x, y)| {
+            .enumerate()
+            .map(|(i, &(x, y))| {
                 spawn_ghost(
                     &mut world,
-                    Number::new(x as i32 * level.tile_size as i32),
-                    Number::new(y as i32 * level.tile_size as i32),
+                    level.tile_center(x as i32),
+                    level.tile_center(y as i32),
                     Direction::UP,
+                    level.total_dots - (50 * i / level.ghosts.len()),
                     build_ghost_archetype(rng, &level),
                 )
             })
             .collect();
 
         spawn_world(&mut world, &level);
+
+        let gate_state = GateState::new(&ghosts);
 
         Self {
             world,
@@ -240,6 +277,8 @@ impl<'g> PacCrabGame<'g> {
             dots_remaining: level.total_dots,
             dots_eaten: [false; 600],
             dots_dirty: Vec::new(),
+            gate_state: gate_state,
+            respawn_queue: Vec::new(),
             level,
             tiles: None,
         }
@@ -267,11 +306,15 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
 
         self.level.set_background_palettes(vram);
 
-        tiles.bg1.set_visible(true);
         render_walls(&self.level, &mut tiles.bg1, vram);
+        tiles.bg1.commit(vram);
+        tiles.bg1.set_visible(true);
 
         tiles.bg2.set_visible(true);
         render_dots(&self.level, &mut tiles.bg2, vram);
+        render_gate(self.gate_state.gate_open, &self.level, &mut tiles.bg2, vram);
+        tiles.bg2.commit(vram);
+        tiles.bg2.set_visible(true);
 
         self.tiles = Some(tiles);
     }
@@ -287,24 +330,52 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
             &mut self.dots_eaten,
             &mut self.dots_dirty,
         );
+        self.dots_remaining -= self.dots_dirty.len();
+
+        system_gate(&self.world, &mut self.gate_state, self.dots_remaining);
+
         system_ghost(
             &self.world,
             &self.level,
             &self.ghosts,
             &self.player,
+            &self.gate_state,
             &mut self.rng,
         );
 
         // FIXME: return dead ghosts here so we can put them into some reincarnation queue
-        let player_dead =
-            system_collision(&mut self.world, &self.level, &self.player, &mut self.ghosts);
+        match system_collision(&mut self.world, &self.level, &self.player, &mut self.ghosts) {
+            CollisionResult::PlayerDied => return GameState::GameOver,
+            CollisionResult::GhostDied(n) => {
+                for _ in 0..n {
+                    let spawn_idx = self.ghosts.len() & self.level.ghosts.len();
+                    self.respawn_queue.push((300, spawn_idx));
+                };
+            },
+            CollisionResult::None => {}
+        }
 
-        self.dots_remaining -= self.dots_dirty.len();
-        agb::println!("Dots remaining {}", self.dots_remaining);
+        self.respawn_queue.retain_mut(|(timer, spawn_idx)| {
+            if *timer == 0 {
+                let (sx, sy) = self.level.ghosts[*spawn_idx];
+                let ghost = spawn_ghost(
+                    &mut self.world,
+                    self.level.tile_center(sx as i32),
+                    self.level.tile_center(sy as i32),
+                    Direction::UP,
+                    self.dots_remaining.saturating_sub(25),
+                    build_ghost_archetype(&mut self.rng, &self.level)
+                );
+                self.ghosts.push(ghost);
+                self.gate_state.exit_queue.push(ghost);
+                false
+            } else {
+                *timer -= 1;
+                true
+            }
+        });
 
-        if player_dead {
-            GameState::GameOver
-        } else if self.dots_remaining == 0 {
+        if self.dots_remaining == 0 {
             GameState::Win(Games::PacCrab)
         } else {
             GameState::Running(Games::PacCrab)
@@ -337,7 +408,6 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
             oam.next()?.set(&object);
         }
 
-
         if let Some(ref mut tiles) = self.tiles {
             let tileset = self.level.get_tileset();
 
@@ -349,6 +419,8 @@ impl<'g> Game<'g> for PacCrabGame<'g> {
                     .bg2
                     .set_tile(vram, (x, y), &tileset, TileSetting::BLANK);
             }
+
+            render_gate(self.gate_state.gate_open, &self.level, &mut tiles.bg2, vram);
 
             tiles.bg2.commit(vram);
         }

@@ -101,6 +101,8 @@ pub struct GhostComponent {
     pub scatter_ty: i32,
     pub scared: bool,
     pub exited: bool,
+    pub exit_threshold: usize,  // dots required relative to total dots
+    pub can_exit: bool,
 }
 impl Component for GhostComponent {}
 
